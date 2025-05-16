@@ -21,15 +21,17 @@ define('SHOW_SUBMISSIONS_HOLDING_DIR', SHOW_SUBMISSIONS_PATH . 'holding/');
 
 // Include required files
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-activator.php';
+require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-deactivator.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-block.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-admin.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-settings.php';
-    
-    // In the plugin's main class or initialization
-    new Show_Submissions_Settings();
 
-// Activation hook
+// Initialize settings
+new Show_Submissions_Settings();
+
+// Activation/Deactivation hooks
 register_activation_hook(__FILE__, array('Show_Submissions_Activator', 'activate'));
+register_deactivation_hook(__FILE__, array('Show_Submissions_Deactivator', 'deactivate'));
 
 // Initialize the plugin
 add_action('init', 'initialize_show_submissions');

@@ -15,15 +15,17 @@ class Show_Submissions_Activator {
             venue_address text NOT NULL,
             show_date date NOT NULL,
             door_time time NOT NULL,
+            music_start_time time NOT NULL,
             performers text NOT NULL,
-            price decimal(10,2) NOT NULL,
+            door_price decimal(10,2) NOT NULL,
+            ticket_price decimal(10,2) NOT NULL,
             show_link varchar(255),
             ticket_link varchar(255),
             images text,
             approved tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id)
-        ) $charset_collate;";
+        )";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);

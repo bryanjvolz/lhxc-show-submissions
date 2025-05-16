@@ -100,7 +100,8 @@ jQuery(document).ready(function($) {
     function generateReview(formData) {
         let html = '<div class="review-content">';
         for (let [key, value] of formData.entries()) {
-            if (key !== 'images[]') {
+            // Skip nonce and images from review display
+            if (key !== 'images[]' && key !== 'nonce') {
                 html += `<div class="review-item">
                     <strong>${key.replace('_', ' ').toUpperCase()}:</strong>
                     <span>${value}</span>

@@ -16,6 +16,8 @@ $submissions = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at
                 <th>Show Date</th>
                 <th>Venue</th>
                 <th>Performers</th>
+                <th>Door Price</th>
+                <th>Ticket Price</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>

@@ -66,6 +66,7 @@ class Show_Submissions_Admin {
             'venue_address' => sanitize_textarea_field($_POST['venue_address']),
             'show_date' => sanitize_text_field($_POST['show_date']),
             'door_time' => sanitize_text_field($_POST['door_time']),
+            'music_start_time' => sanitize_text_field($_POST['music_start_time']),
             'performers' => sanitize_textarea_field($_POST['performers']),
             'price' => floatval($_POST['price']),
             'show_link' => esc_url_raw($_POST['show_link']),
@@ -76,7 +77,7 @@ class Show_Submissions_Admin {
             $table_name,
             $data,
             array('id' => intval($_POST['submission_id'])),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%s', '%s'),
+            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%s', '%s'),
             array('%d')
         );
 

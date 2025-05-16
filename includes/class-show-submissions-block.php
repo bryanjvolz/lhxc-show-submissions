@@ -79,11 +79,27 @@ class Show_Submissions_Block {
             'venue_address' => sanitize_textarea_field($_POST['venue_address']),
             'show_date' => sanitize_text_field($_POST['show_date']),
             'door_time' => sanitize_text_field($_POST['door_time']),
+            'music_start_time' => sanitize_text_field($_POST['music_start_time']),
             'performers' => sanitize_textarea_field($_POST['performers']),
             'price' => floatval($_POST['price']),
             'show_link' => esc_url_raw($_POST['show_link']),
             'ticket_link' => esc_url_raw($_POST['ticket_link'])
         );
+
+        // Handle venue address components
+        if (isset($_POST['venue_street'])) {
+            $venue_components = array(
+                'street' => sanitize_text_field($_POST['venue_street']),
+                'city' => sanitize_text_field($_POST['venue_city']),
+                'state' => sanitize_text_field($_POST['venue_state']),
+                'zip' => sanitize_text_field($_POST['venue_zip'])
+            );
+            
+            // Create full address if individual components are provided
+            if (!empty(array_filter($venue_components))) {
+                $submission_data['venue_address'] = implode(', ', array_filter($venue_components));
+            }
+        }
 
         // Handle file uploads
         $uploaded_files = array();
@@ -119,12 +135,24 @@ class Show_Submissions_Block {
         // Store in database
         global $wpdb;
         $table_name = $wpdb->prefix . 'lhxc_show_submissions';
-
+        
         $result = $wpdb->insert(
             $table_name,
             $submission_data,
             array(
-                '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%s'
+                '%s', // submitter_name
+                '%s', // submitter_email
+                '%s', // booking_name
+                '%s', // booking_email
+                '%s', // venue_name
+                '%s', // venue_address
+                '%s', // show_date
+                '%s', // door_time
+                '%s', // music_start_time
+                '%s', // performers
+                '%f', // price
+                '%s', // show_link
+                '%s'  // ticket_link
             )
         );
 
@@ -133,9 +161,22 @@ class Show_Submissions_Block {
             return;
         }
 
+        $submission_id = $wpdb->insert_id;
+
+        // Update the images field if files were uploaded
+        if (!empty($uploaded_files)) {
+            $wpdb->update(
+                $table_name,
+                array('images' => serialize($uploaded_files)),
+                array('id' => $submission_id),
+                array('%s'),
+                array('%d')
+            );
+        }
+
         wp_send_json_success(array(
-            'message' => 'Show submission received successfully',
-            'id' => $wpdb->insert_id
+            'message' => 'Show submission received successfully!',
+            'submission_id' => $submission_id
         ));
     }
 }
