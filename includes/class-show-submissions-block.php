@@ -23,11 +23,11 @@ class Show_Submissions_Block {
 
     public function render_form() {
         $api_key = get_option('show_submissions_google_api_key');
-        
+
         if ($api_key) {
             wp_enqueue_script(
                 'google-places',
-                'https://maps.googleapis.com/maps/api/js?key=' . esc_attr($api_key) . '&libraries=places',
+                'https://maps.googleapis.com/maps/api/js?key=' . esc_attr($api_key) . '&libraries=places&callback=initGooglePlacesAutocomplete',
                 array(),
                 null,
                 true
@@ -62,7 +62,11 @@ class Show_Submissions_Block {
     }
 
     public function handle_submission() {
-        check_ajax_referer('show_submission_nonce', 'nonce');
+        // Check nonce
+        if (!check_ajax_referer('submit_show_nonce', '_ajax_nonce', false)) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
 
         $upload_dir = SHOW_SUBMISSIONS_PATH . 'assets/submissions/';
         if (!file_exists($upload_dir)) {
@@ -81,7 +85,8 @@ class Show_Submissions_Block {
             'door_time' => sanitize_text_field($_POST['door_time']),
             'music_start_time' => sanitize_text_field($_POST['music_start_time']),
             'performers' => sanitize_textarea_field($_POST['performers']),
-            'price' => floatval($_POST['price']),
+            'door_price' => floatval($_POST['door_price']),
+            'ticket_price' => floatval($_POST['ticket_price']),
             'show_link' => esc_url_raw($_POST['show_link']),
             'ticket_link' => esc_url_raw($_POST['ticket_link'])
         );
@@ -94,7 +99,7 @@ class Show_Submissions_Block {
                 'state' => sanitize_text_field($_POST['venue_state']),
                 'zip' => sanitize_text_field($_POST['venue_zip'])
             );
-            
+
             // Create full address if individual components are provided
             if (!empty(array_filter($venue_components))) {
                 $submission_data['venue_address'] = implode(', ', array_filter($venue_components));
@@ -135,7 +140,7 @@ class Show_Submissions_Block {
         // Store in database
         global $wpdb;
         $table_name = $wpdb->prefix . 'lhxc_show_submissions';
-        
+
         $result = $wpdb->insert(
             $table_name,
             $submission_data,

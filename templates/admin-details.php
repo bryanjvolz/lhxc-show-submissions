@@ -19,8 +19,17 @@
             </tr>
             <tr>
                 <th><label for="booking_name">Booking Name</label></th>
-                <td><input type="text" id="booking_name" name="booking_name" class="regular-text"
-                    value="<?php echo esc_attr($submission->booking_name); ?>"></td>
+                <td>
+                    <?php
+                    if (class_exists('Tribe__Events__Main') && is_numeric($submission->booking_name)) {
+                        $organizer = get_post($submission->booking_name);
+                        echo '<input type="hidden" name="booking_name" value="' . esc_attr($submission->booking_name) . '">';
+                        echo '<input type="text" class="regular-text" disabled value="' . esc_attr($organizer ? $organizer->post_title : $submission->booking_name) . '">';
+                    } else {
+                        echo '<input type="text" id="booking_name" name="booking_name" class="regular-text" value="' . esc_attr($submission->booking_name) . '">';
+                    }
+                    ?>
+                </td>
             </tr>
             <tr>
                 <th><label for="booking_email">Booking Email</label></th>
@@ -29,8 +38,17 @@
             </tr>
             <tr>
                 <th><label for="venue_name">Venue Name</label></th>
-                <td><input type="text" id="venue_name" name="venue_name" class="regular-text"
-                    value="<?php echo esc_attr($submission->venue_name); ?>"></td>
+                <td>
+                    <?php
+                    if (class_exists('Tribe__Events__Main') && is_numeric($submission->venue_name)) {
+                        $venue = get_post($submission->venue_name);
+                        echo '<input type="hidden" name="venue_name" value="' . esc_attr($submission->venue_name) . '">';
+                        echo '<input type="text" class="regular-text" disabled value="' . esc_attr($venue ? $venue->post_title : $submission->venue_name) . '">';
+                    } else {
+                        echo '<input type="text" id="venue_name" name="venue_name" class="regular-text" value="' . esc_attr($submission->venue_name) . '">';
+                    }
+                    ?>
+                </td>
             </tr>
             <tr>
                 <th><label for="venue_address">Venue Address</label></th>
@@ -58,19 +76,14 @@
                     echo esc_textarea($submission->performers); ?></textarea></td>
             </tr>
             <tr>
-                <th><label for="price">Price</label></th>
-                <td><input type="number" id="price" name="price" step="0.01"
-                    value="<?php echo esc_attr($submission->price); ?>"></td>
-            </tr>
-            <tr>
                 <th><label for="door_price">Door Price</label></th>
                 <td><input type="number" id="door_price" name="door_price" step="0.01"
-                    value="<?php echo esc_attr($submission->door_price); ?>"></td>
+                    value="<?php echo esc_attr($submission->door_price); ?>" class="regular-text"></td>
             </tr>
             <tr>
                 <th><label for="ticket_price">Ticket Price</label></th>
                 <td><input type="number" id="ticket_price" name="ticket_price" step="0.01"
-                    value="<?php echo esc_attr($submission->ticket_price); ?>"></td>
+                    value="<?php echo esc_attr($submission->ticket_price); ?>" class="regular-text"></td>
             </tr>
             <tr>
                 <th><label for="show_link">Show Link</label></th>

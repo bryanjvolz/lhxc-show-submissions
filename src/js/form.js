@@ -120,8 +120,9 @@ jQuery(document).ready(function($) {
     window.submitFinal = function() {
         const formData = new FormData($('#showSubmissionStep1')[0]);
         formData.append('action', 'submit_show');
+        formData.append('_ajax_nonce', showSubmissions.nonce);  // Add this line if not present
         formData.append('nonce', showSubmissions.nonce);
-
+        console.log(showSubmissions.ajaxurl);
         $.ajax({
             url: showSubmissions.ajaxurl,  // Use the localized URL
             type: 'POST',
@@ -162,7 +163,7 @@ jQuery(document).ready(function($) {
             // Extract address components
             for (const component of place.address_components) {
                 const type = component.types[0];
-                
+
                 switch (type) {
                     case 'street_number':
                         street = component.long_name + ' ';
@@ -187,9 +188,9 @@ jQuery(document).ready(function($) {
             document.getElementById('venue_city').value = city;
             document.getElementById('venue_state').value = state;
             document.getElementById('venue_zip').value = zip;
-            
+
             // Populate the original venue_address field for database storage
-            document.getElementById('venue_address').value = 
+            document.getElementById('venue_address').value =
                 `${street}\n${city}, ${state} ${zip}`;
         });
     }
@@ -197,5 +198,83 @@ jQuery(document).ready(function($) {
     // Initialize autocomplete when document is ready
     if (typeof google !== 'undefined') {
         google.maps.event.addDomListener(window, 'load', initializeAutocomplete);
+    }
+
+    // Handle venue selection
+    const venueSelect = document.getElementById('venue_name');
+    const venueAddressGroup = document.getElementById('venue_address_group');
+    const addressInput = document.getElementById('venue_address_autocomplete');
+    let autocomplete;
+
+    if (venueSelect) {
+        venueSelect.addEventListener('change', function() {
+            if (this.value === 'new') {
+                venueAddressGroup.style.display = 'block';
+                // Initialize autocomplete when the input becomes visible
+                if (!autocomplete && typeof google !== 'undefined') {
+                    initVenueAutocomplete();
+                }
+            } else {
+                venueAddressGroup.style.display = 'none';
+                if (this.value) {
+                    const selectedOption = this.options[this.selectedIndex];
+                    document.getElementById('venue_street').value = selectedOption.dataset.street || '';
+                    document.getElementById('venue_city').value = selectedOption.dataset.city || '';
+                    document.getElementById('venue_state').value = selectedOption.dataset.state || '';
+                    document.getElementById('venue_zip').value = selectedOption.dataset.zip || '';
+                }
+            }
+        });
+    }
+
+    function initVenueAutocomplete() {
+        if (!addressInput) return;
+
+        autocomplete = new google.maps.places.Autocomplete(addressInput, {
+            types: ['address'],
+            componentRestrictions: { country: 'us' }
+        });
+
+        autocomplete.addListener('place_changed', function() {
+            const place = autocomplete.getPlace();
+            let street = '', city = '', state = '', zip = '';
+
+            for (const component of place.address_components) {
+                const type = component.types[0];
+                switch (type) {
+                    case 'street_number':
+                        street = component.long_name + ' ';
+                        break;
+                    case 'route':
+                        street += component.long_name;
+                        break;
+                    case 'locality':
+                        city = component.long_name;
+                        break;
+                    case 'administrative_area_level_1':
+                        state = component.short_name;
+                        break;
+                    case 'postal_code':
+                        zip = component.long_name;
+                        break;
+                }
+            }
+
+            document.getElementById('venue_street').value = street;
+            document.getElementById('venue_city').value = city;
+            document.getElementById('venue_state').value = state;
+            document.getElementById('venue_zip').value = zip;
+        });
+    }
+
+    // Initialize Google Places when the API is loaded
+    if (typeof google === 'object' && typeof google.maps === 'object') {
+        // Only initialize if the "new venue" option is selected
+        if (venueSelect && venueSelect.value === 'new') {
+            initVenueAutocomplete();
+        }
+    } else {
+        // If Google Maps isn't loaded yet, wait for it
+        window.initVenueAutocomplete = initVenueAutocomplete;
     }
 });

@@ -90,6 +90,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                                 }
                                 ?>
                             </select>
+                            <span id="selected_venue_address" class="venue-address-display"></span>
                         </div>
                     <?php else: ?>
                         <div class="form-group">
@@ -98,9 +99,9 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                         </div>
                     <?php endif; ?>
 
-                    <div class="form-group">
-                        <label for="venue_address_autocomplete">Venue Address *</label>
-                        <input type="text" id="venue_address_autocomplete" placeholder="Start typing venue address..." required>
+                    <div class="form-group" id="venue_address_group" style="display: none;">
+                        <label for="venue_address">Venue Address *</label>
+                        <input type="text" id="venue_address" name="venue_address" class="google-places-autocomplete" placeholder="Start typing venue address...">
 
                         <!-- Hidden address fields -->
                         <input type="hidden" id="venue_street" name="venue_street">
@@ -129,18 +130,10 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                     <p class="shows-help-text"><small>For fests or multi-day shows, just put in the first date/time</small></p>
                 </formgroup>
 
-                <formgroup class="random-bg">
-                    <div class="form-group">
-                        <label for="performers">Bands/Performers *</label>
-                        <textarea id="performers" name="performers" required rows="6" placeholder="Bands"></textarea>
-                    </div>
-                    <p class="shows-help-text"><small>One per line, add any extra info here</small></p>
-                </formgroup>
-
                 <formgroup class="random-bg form-columns form-columns--price">
                     <div class="form-group">
-                        <label for="price">Door Price *</label>
-                        <input type="number" id="price" name="price" step="0.01" required placeholder="$5">
+                        <label for="door_price">Door Price *</label>
+                        <input type="number" id="door_price" name="door_price" step="0.01" required placeholder="$5">
                     </div>
 
                     <div class="form-group">
@@ -160,6 +153,14 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                 </formgroup>
             </div>
             <div class="column">
+                <formgroup class="random-bg">
+                    <div class="form-group">
+                        <label for="performers">Bands/Performers *</label>
+                        <textarea id="performers" name="performers" required rows="6" placeholder="Bands"></textarea>
+                    </div>
+                    <p class="shows-help-text"><small>One per line, add any extra info here</small></p>
+                </formgroup>
+
                 <formgroup class="random-bg">
                     <div class="form-group">
                         <label for="images">Show Flyer Images (PNG, JPG, JPEG up to 5MB)</label>
@@ -188,6 +189,18 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
         </div>
     </div>
 </div>
+
+<?php
+// Enqueue the required assets
+wp_enqueue_style('show-submissions-form-style', show_submissions_get_asset_url('css/style.min.css'), array(), '1.0.0');
+wp_enqueue_script('show-submissions-form-script', show_submissions_get_asset_url('js/form.min.js'), array('jquery'), '1.0.0', true);
+
+// Add the necessary AJAX URL for the form submission
+wp_localize_script('show-submissions-form-script', 'showSubmissions', array(
+    'ajaxurl' => admin_url('admin-ajax.php'),
+    'nonce' => wp_create_nonce('submit_show_nonce')  // Updated nonce name
+));
+?>
 
 <style>
     @media screen and (min-width: 800px) {
@@ -321,6 +334,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
 
             venueSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
+                const venueAddressGroup = document.getElementById('venue_address_group');
 
                 // Handle new venue option
                 if (selectedOption.value === 'new') {
@@ -328,6 +342,8 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                     newVenueInput.style.display = 'block';
                     newVenueInput.required = true;
                     venueSelect.required = false;
+                    venueAddressGroup.style.display = 'block';
+                    document.getElementById('venue_address').required = true;
 
                     // Clear address fields
                     venueAddressInput.value = '';
@@ -343,6 +359,8 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                 newVenueInput.required = false;
                 venueSelect.required = true;
                 venueSelect.style.display = 'block';
+                venueAddressGroup.style.display = 'none';
+                document.getElementById('venue_address').required = false;
 
                 if (selectedOption.value) {
                     venueAddressInput.value = selectedOption.getAttribute('data-address');
@@ -362,10 +380,10 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
 
         // generate random figures for background card rotations
         const randomBgs = document.querySelectorAll('.random-bg');
-        console.table(randomBgs);
+        // console.table(randomBgs);
 
         function generateRandomRotation(elem) {
-            console.log(this);
+            // console.log(this);
             const min = -.85;
             const max = .85;
             const rotateAmount = (Math.random() * (max - min + 1) + min);
@@ -386,3 +404,85 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
         margin-top: 5px;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const venueSelect = document.getElementById('venue_name');
+    const addressDisplay = document.getElementById('selected_venue_address');
+
+    venueSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value && selectedOption.value !== 'new') {
+            const address = selectedOption.getAttribute('data-address');
+            addressDisplay.textContent = address;
+            addressDisplay.style.display = 'block';
+        } else {
+            addressDisplay.textContent = '';
+            addressDisplay.style.display = 'none';
+        }
+    });
+});
+</script>
+
+<style>
+.venue-address-display {
+    display: none;
+    margin-left: 10px;
+    font-style: italic;
+    color: #666;
+}
+</style>
+
+<script>
+function initGooglePlacesAutocomplete() {
+    const addressInput = document.getElementById('venue_address');
+    if (!addressInput) return;
+
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+        types: ['address'],
+        componentRestrictions: { country: 'us' }
+    });
+
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        let street = '', city = '', state = '', zip = '';
+
+        // Extract address components
+        for (const component of place.address_components) {
+            const type = component.types[0];
+            switch (type) {
+                case 'street_number':
+                    street = component.long_name + ' ';
+                    break;
+                case 'route':
+                    street += component.long_name;
+                    break;
+                case 'locality':
+                    city = component.long_name;
+                    break;
+                case 'administrative_area_level_1':
+                    state = component.short_name;
+                    break;
+                case 'postal_code':
+                    zip = component.long_name;
+                    break;
+            }
+        }
+
+        // Update hidden fields
+        document.getElementById('venue_street').value = street;
+        document.getElementById('venue_city').value = city;
+        document.getElementById('venue_state').value = state;
+        document.getElementById('venue_zip').value = zip;
+        document.getElementById('venue_address').value = place.formatted_address;
+    });
+}
+
+// Initialize Google Places when the API is loaded
+if (typeof google === 'object' && typeof google.maps === 'object') {
+    initGooglePlacesAutocomplete();
+} else {
+    // If Google Maps isn't loaded yet, wait for it
+    window.initGooglePlacesAutocomplete = initGooglePlacesAutocomplete;
+}
+</script>

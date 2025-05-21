@@ -18,7 +18,7 @@ class Show_Submissions_Admin {
 
         // Add hidden submenu page for details
         add_submenu_page(
-            null,
+            'index.php',
             'Submission Details',
             'Submission Details',
             'edit_posts',
@@ -68,7 +68,8 @@ class Show_Submissions_Admin {
             'door_time' => sanitize_text_field($_POST['door_time']),
             'music_start_time' => sanitize_text_field($_POST['music_start_time']),
             'performers' => sanitize_textarea_field($_POST['performers']),
-            'price' => floatval($_POST['price']),
+            'door_price' => floatval($_POST['door_price']),
+            'ticket_price' => floatval($_POST['ticket_price']),
             'show_link' => esc_url_raw($_POST['show_link']),
             'ticket_link' => esc_url_raw($_POST['ticket_link'])
         );
