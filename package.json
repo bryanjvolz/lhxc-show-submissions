@@ -6,10 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "watch": "vite build --watch"
+    "watch": "vite build --watch",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "cypress run"
   },
   "devDependencies": {
-    "vite": "^4.4.9",
-    "sass": "^1.66.1"
+    "cypress": "^14.4.0",
+    "dotenv": "^16.5.0",
+    "sass": "^1.66.1",
+    "vite": "^6.3.5"
   }
 }

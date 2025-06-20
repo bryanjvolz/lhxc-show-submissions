@@ -8,6 +8,7 @@ export default defineConfig({
       input: {
         form: resolve(__dirname, 'src/js/form.js'),
         admin: resolve(__dirname, 'src/js/admin.js'),
+        settings: resolve(__dirname, 'src/js/settings.js'),
         style: resolve(__dirname, 'src/scss/style.scss'),
         admin_style: resolve(__dirname, 'src/scss/admin.scss')
       },

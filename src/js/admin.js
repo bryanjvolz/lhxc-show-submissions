@@ -1,25 +1,4 @@
 jQuery(document).ready(function($) {
-    const modal = $('#submissionModal');
-    const modalContent = $('#submissionDetails');
-
-    // View Details button handler
-    $('.view-details').on('click', function() {
-        const row = $(this).closest('tr');
-        const submissionId = row.data('id');
-
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'get_submission_details',
-                id: submissionId
-            },
-            success: function(response) {
-                modalContent.html(response);
-                modal.show();
-            }
-        });
-    });
 
     // Approval toggle handler
     $('.approval-toggle').on('change', function() {
@@ -45,17 +24,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Modal close button
-    $('.close').on('click', function() {
-        modal.hide();
-    });
 
-    // Close modal when clicking outside
-    $(window).on('click', function(event) {
-        if ($(event.target).is(modal)) {
-            modal.hide();
-        }
-    });
 
     // View Details button handler
     $('.view-details').on('click', function() {

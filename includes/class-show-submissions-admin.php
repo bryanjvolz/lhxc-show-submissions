@@ -1,8 +1,10 @@
 <?php
 class Show_Submissions_Admin {
     public function __construct() {
-        add_action('admin_menu', array($this, 'add_admin_menu'), 10); // Lower priority number to run first
+        add_action('admin_menu', array($this, 'add_admin_menu'), 10);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+        // Add AJAX handlers
+        add_action('wp_ajax_update_submission_approval', array($this, 'update_submission_approval'));
     }
 
     public function add_admin_menu() {
@@ -18,7 +20,7 @@ class Show_Submissions_Admin {
 
         // Add hidden submenu page for details
         add_submenu_page(
-            'index.php',
+            null, // Setting parent slug to null hides the page from menu
             'Submission Details',
             'Submission Details',
             'edit_posts',
@@ -160,5 +162,143 @@ class Show_Submissions_Admin {
             </table>
         </div>
         <?php
+    }
+
+    public function update_submission_approval() {
+        // Get and validate parameters
+        $submission_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        $approved = isset($_POST['approved']) ? (bool)$_POST['approved'] : false;
+
+        if (!$submission_id) {
+            wp_send_json_error('Invalid submission ID');
+        }
+
+        // Update the approval status
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'lhxc_show_submissions';
+
+        // Get the submission data first
+        $submission = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $submission_id
+        ));
+
+        if (!$submission) {
+            wp_send_json_error('Submission not found');
+        }
+
+        $result = $wpdb->update(
+            $table_name,
+            array('approved' => $approved),
+            array('id' => $submission_id),
+            array('%d'),
+            array('%d')
+        );
+
+        if ($result === false) {
+            wp_send_json_error('Failed to update approval status');
+        }
+
+        // If approved, create an event
+        if ($approved) {
+            // Format the event date and times
+            $event_date = $submission->show_date;
+            $start_time = $submission->music_start_time;
+            $door_time = $submission->door_time;
+
+            // Create the event
+            $event_data = array(
+                'post_title'   => sprintf('Show at %s', $submission->venue_name),
+                'post_content' => $submission->performers,
+                'post_status'  => 'publish',
+                'post_type'    => 'tribe_events',
+                'meta_input'   => array(
+                    '_EventStartDate'    => $event_date . ' ' . $start_time,
+                    '_EventEndDate'      => $event_date . ' ' . date('H:i:s', strtotime($start_time . ' +3 hours')),
+                    '_EventVenueID'      => $this->get_or_create_venue($submission),
+                    '_EventURL'          => $submission->show_link,
+                    '_EventCost'         => $submission->ticket_price,
+                    '_EventDoorTime'     => $door_time,
+                    '_EventShowLink'     => $submission->show_link,
+                    '_EventTicketLink'   => $submission->ticket_link
+                )
+            );
+
+            $event_id = wp_insert_post($event_data);
+
+            if (is_wp_error($event_id)) {
+                wp_send_json_error('Failed to create event: ' . $event_id->get_error_message());
+            }
+
+            // If there are images, attach them to the event
+            if (!empty($submission->images)) {
+                $images = explode(',', $submission->images);
+                foreach ($images as $image) {
+                    $image_path = SHOW_SUBMISSIONS_HOLDING_DIR . $image;
+                    if (file_exists($image_path)) {
+                        $this->attach_image_to_event($event_id, $image_path);
+                    }
+                }
+            }
+        }
+
+        wp_send_json_success();
+    }
+
+    private function get_or_create_venue($submission) {
+        // Check if venue exists
+        $venues = get_posts(array(
+            'post_type' => 'tribe_venue',
+            'title' => $submission->venue_name,
+            'posts_per_page' => 1
+        ));
+
+        if (!empty($venues)) {
+            return $venues[0]->ID;
+        }
+
+        // Create new venue
+        $venue_data = array(
+            'post_title' => $submission->venue_name,
+            'post_type' => 'tribe_venue',
+            'post_status' => 'publish',
+            'meta_input' => array(
+                '_VenueAddress' => $submission->venue_address
+            )
+        );
+
+        $venue_id = wp_insert_post($venue_data);
+        return is_wp_error($venue_id) ? 0 : $venue_id;
+    }
+
+    private function attach_image_to_event($event_id, $image_path) {
+        $wp_upload_dir = wp_upload_dir();
+        $filename = basename($image_path);
+        $new_path = $wp_upload_dir['path'] . '/' . $filename;
+
+        // Copy file to uploads directory
+        copy($image_path, $new_path);
+
+        // Prepare attachment data
+        $wp_filetype = wp_check_filetype($filename);
+        $attachment = array(
+            'post_mime_type' => $wp_filetype['type'],
+            'post_title' => sanitize_file_name($filename),
+            'post_content' => '',
+            'post_status' => 'inherit'
+        );
+
+        // Insert attachment
+        $attach_id = wp_insert_attachment($attachment, $new_path, $event_id);
+
+        // Generate attachment metadata
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        $attach_data = wp_generate_attachment_metadata($attach_id, $new_path);
+        wp_update_attachment_metadata($attach_id, $attach_data);
+
+        // Set as featured image if it's the first image
+        if (!has_post_thumbnail($event_id)) {
+            set_post_thumbnail($event_id, $attach_id);
+        }
     }
 }
