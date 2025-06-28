@@ -25,7 +25,7 @@ class Show_Submissions_Activator {
             approved tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id)
-        )";
+        ) $charset_collate";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);

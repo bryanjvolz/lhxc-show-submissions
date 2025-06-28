@@ -25,6 +25,7 @@ require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-deactivato
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-block.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-admin.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-settings.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-show-submissions-constants.php';
 
 // Initialize settings
 new Show_Submissions_Settings();

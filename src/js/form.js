@@ -75,9 +75,9 @@ document.addEventListener("DOMContentLoaded", function () {
           const div = document.createElement("div");
           div.className = "preview-item";
           div.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview">
-                        <button type="button" class="remove-image" data-index="${index}">×</button>
-                    `;
+                          <img src="${e.target.result}" alt="Preview">
+                          <button type="button" class="remove-image" data-index="${index}">×</button>
+                      `;
 
           div
             .querySelector(".remove-image")
@@ -93,13 +93,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     Promise.all(promises).then((divs) => {
-        console.log(divs);
+      console.log(divs);
       divs.forEach((div) => preview.appendChild(div));
     });
   }
 
   // Form submission handling
-  document.getElementById("showSubmissionStep1").addEventListener("submit", function (e) {
+  document
+    .getElementById("showSubmissionStep1")
+    .addEventListener("submit", function (e) {
       e.preventDefault();
       const formData = new FormData(this);
       uploadedFiles.forEach((file) => {
@@ -113,7 +115,142 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
   function generateReview(formData) {
-    let html = '<div class="review-content">';
+    let html = '<div class="review-content"><div class="review-fields">';
+
+    // Get organizer value and handle it safely
+    const organizerValue = formData.get("organizer");
+    if (organizerValue) {
+      const organizerSelect = document.getElementById("organizer");
+      let organizerDisplay = organizerValue; // fallback to value if can't get name
+
+      if (organizerSelect && organizerSelect.options) {
+        const selectedOption =
+          organizerSelect.options[organizerSelect.selectedIndex];
+        if (selectedOption) {
+          organizerDisplay = selectedOption.text;
+        }
+      }
+
+      html += `<div class="review-item">
+                <strong>ORGANIZER:</strong>
+                <span data-name="${organizerDisplay}" data-id="${organizerValue}">${organizerDisplay}</span>
+            </div>`;
+    }
+
+    // Get organizer value and handle it safely
+    const bookingNameValue = formData.get("booking_name");
+    if (bookingNameValue) {
+      const bookingNameSelect = document.getElementById("booking_name");
+      let bookingNameDisplay = bookingNameValue; // fallback to value if can't get name
+
+      if (bookingNameSelect && bookingNameSelect.options) {
+        const selectedOption =
+          bookingNameSelect.options[bookingNameSelect.selectedIndex];
+        if (selectedOption) {
+          bookingNameDisplay = selectedOption.text;
+        }
+      }
+
+      html += `<div class="review-item">
+                <strong>ORGANIZER:</strong>
+                <span data-name="${bookingNameDisplay}" data-id="${organizerValue}">${bookingNameDisplay}</span>
+            </div>`;
+    }
+
+    // Get venue value and handle it safely
+    const venueValue = formData.get("venue_name");
+    if (venueValue) {
+      const venueSelect = document.getElementById("venue_name");
+      let venueDisplay = venueValue; // fallback to value if can't get name
+
+      if (venueSelect && venueSelect.options) {
+        const selectedOption = venueSelect.options[venueSelect.selectedIndex];
+        if (selectedOption) {
+          venueDisplay = selectedOption.text;
+        }
+      }
+
+      html += `<div class="review-item">
+                <strong>VENUE NAME:</strong>
+                <span data-name="${venueDisplay}" data-id="${venueValue}">${venueDisplay}</span>
+            </div>`;
+    }
+
+    // Only show New Organizer Name if it has a value
+    const newOrganizerName = formData.get("new_organizer_name");
+    if (newOrganizerName) {
+      html += `<div class="review-item">
+                <strong>NEW ORGANIZER NAME:</strong>
+                <span>${newOrganizerName}</span>
+            </div>`;
+    }
+
+    // Only show Booking Email if it has a value
+    const bookingEmail = formData.get("booking_email");
+    if (bookingEmail) {
+      html += `<div class="review-item">
+                <strong>BOOKING EMAIL:</strong>
+                <span>${bookingEmail}</span>
+            </div>`;
+    }
+
+    // Handle door time formatting
+    const doorTime = formData.get("door_time");
+    if (doorTime) {
+      const formattedTime = new Date(`2000-01-01T${doorTime}`)
+        .toLocaleString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+        .toLowerCase();
+      html += `<div class="review-item">
+                <strong>DOOR TIME:</strong>
+                <span data-time="${doorTime}" data-formatted-time="${formattedTime}">${formattedTime}</span>
+            </div>`;
+    }
+
+    // Handle ticket price with dollar sign
+    const ticketPrice = formData.get("ticket_price");
+    if (ticketPrice) {
+      html += `<div class="review-item">
+                <strong>PRICE:</strong>
+                <span>$${ticketPrice}</span>
+            </div>`;
+    }
+
+    // Handle ticket link as clickable
+    const showLink = formData.get("show_link");
+    if (showLink) {
+      html += `<div class="review-item">
+                <strong>LINK:</strong>
+                <span><a href="${showLink}" target="_blank" rel="noopener noreferrer">${showLink}</a></span>
+            </div>`;
+    }
+
+    // Handle show link as clickable
+    const showDate = formData.get("show_date");
+    const timeZone = formData.get("time_zone");
+    // const dateObj = new Date(showDate);
+
+    // Create a date string with the time set to noon in the selected timezone
+    // This prevents any date shifting due to timezone conversion
+    const dateString = `${showDate}T12:00:00`;
+    const formattedDate = new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: timeZone
+    });
+
+    if (showDate) {
+      html += `<div class="review-item">
+                <strong>SHOW DATE:</strong>
+                <span>${formattedDate}</span>
+            </div>`;
+    }
+
+    // Add other form fields
     for (let [key, value] of formData.entries()) {
       if (
         key !== "images[]" &&
@@ -121,18 +258,32 @@ document.addEventListener("DOMContentLoaded", function () {
         key !== "submitter_name" &&
         key !== "submitter_email" &&
         key !== "door_price" &&
-        key !== "music_start_time" &&
-        key !== "ticket_link"
+        key !== "door_time" &&
+        key !== "show_link" &&
+        key !== "organizer" &&
+        key !== "new_organizer_name" &&
+        key !== "booking_email" &&
+        key !== "booking_name" &&
+        key !== "venue_name" &&
+        key !== "ticket_price" &&
+        key !== "show_date" &&
+        key !== "time_zone" &&
+        value !== ""
       ) {
         html += `<div class="review-item">
-                    <strong>${key.replace("_", " ").toUpperCase()}:</strong>
-                    <span>${value}</span>
+                    <strong>${key.replace(/_/g, " ").toUpperCase()}:</strong>
+                    <span ${
+                      key === "performers"
+                        ? 'style="display: block; white-space: pre-wrap;"'
+                        : ""
+                    }>${value}</span>
                 </div>`;
       }
     }
-    html += '<div class="review-images">';
+
+    // Add images
+    html += '</div><div class="review-images">';
     uploadedFiles.forEach((file) => {
-        console.log(uploadedFiles);
       const url = URL.createObjectURL(file);
       html += `<img src="${url}" alt="Upload preview">`;
     });

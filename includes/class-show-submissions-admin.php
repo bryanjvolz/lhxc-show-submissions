@@ -73,14 +73,15 @@ class Show_Submissions_Admin {
             'door_price' => floatval($_POST['door_price']),
             'ticket_price' => floatval($_POST['ticket_price']),
             'show_link' => esc_url_raw($_POST['show_link']),
-            'ticket_link' => esc_url_raw($_POST['ticket_link'])
+            'ticket_link' => esc_url_raw($_POST['ticket_link']),
+            'approved' => isset($_POST['approved']) ? 1 : 0  // Add this line
         );
 
         $wpdb->update(
             $table_name,
             $data,
             array('id' => intval($_POST['submission_id'])),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%s', '%s'),
+            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%d'),  // Add '%d' for approved
             array('%d')
         );
 
@@ -103,7 +104,7 @@ class Show_Submissions_Admin {
             'showSubmissionsAdmin',
             array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('show_submissions_admin_nonce')
+                'nonce' => wp_create_nonce('show_submissions_admin')  // Remove '_nonce' suffix
             )
         );
     }

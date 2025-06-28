@@ -1,5 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
+date_default_timezone_set('America/Kentucky/Louisville');
+
 
 // Check if The Events Calendar is active
 $events_calendar_active = class_exists('Tribe__Events__Main');
@@ -136,6 +138,30 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                         <input type="time" id="door_time" name="door_time" value="18:00" required>
                     </div>
 
+                    <div class="form-group">
+                        <label for="time_zone">Time Zone *</label>
+                        <select id="time_zone" name="time_zone" required>
+                            <option value="">Select Time Zone</option>
+                            <?php
+                            // Get time zones from global constants
+                            $timeZones = Show_Submissions_Constants::get_time_zones();
+                            foreach ($timeZones as $tz) {
+                                $offset = (new DateTimeZone($tz['zone']))->getOffset(new DateTime());
+                                $tzAbbr = (new DateTime('now', new DateTimeZone($tz['zone'])))->format('T');
+                                
+                                echo sprintf(
+                                    '<option value="%s" data-utc-offset="%s" %s>%s (%s)</option>',
+                                    esc_attr($tz['zone']),
+                                    esc_attr($offset),
+                                    esc_attr($tz['zone'] === date_default_timezone_get() ? 'selected' : ''),
+                                    esc_html($tz['name']),
+                                    esc_html($tzAbbr)
+                                );
+                            }
+                            ?>
+                        </select>
+                    </div>
+
                     <!-- Temporarily hidden
                     <div class="form-group">
                         <label for="music_start_time">Music Start Time *</label>
@@ -211,7 +237,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
 
 <?php
 // Enqueue the required assets
-wp_enqueue_style('show-submissions-form-style', show_submissions_get_asset_url('css/style.min.css'), array(), '1.0.0');
+// wp_enqueue_style('show-submissions-form-style', show_submissions_get_asset_url('css/style.min.css'), array(), '1.0.0');
 // wp_enqueue_script('show-submissions-form-script', show_submissions_get_asset_url('js/form.min.js'), array('jquery'), '1.0.0', true);
 
 // Add the necessary AJAX URL for the form submission
@@ -221,80 +247,31 @@ wp_localize_script('show-submissions-form-script', 'showSubmissions', array(
 ));
 ?>
 
-<style>
-    @media screen and (min-width: 800px) {
-        .show-submission-form {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-gap: 1.5em;
-        }
-
-        .show-submission-form div:last-child {
-            align-self: start;
-            position: sticky;
-            top: 0;
-        }
-
-        .form-columns {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-auto-rows: 100px;
-            grid-gap: 10px;
-        }
-
-        .form-columns-3lg {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        .form-columns--price {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            /* grid-template-rows: repeat(3, 1fr); */
-
-            .show-link {
-                /* grid-column: span 2 / span 2; */
-                grid-column: span 4;
-            }
-
-            .ticket-link {
-                grid-column: span 2 / span 2;
-                grid-row-start: 3;
-            }
-        }
-    }
-
-    input[name="ticket_price"] {
-        max-width: 5em;
-    }
-
-    .shows-help-text {
-        grid-column: 1 / span all;
-        padding: 0;
-        margin: 0;
-        width: 100%;
-    }
-</style>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         <?php if ($events_calendar_active): ?>
             // Handle organizer selection
             const bookingNameSelect = document.getElementById('booking_name');
             const bookingEmailInput = document.getElementById('booking_email');
+
+            if (!bookingNameSelect) return; // Exit if select element doesn't exist
+
             const newOrganizerInput = document.createElement('input');
 
             // Create new organizer input
             newOrganizerInput.type = 'text';
             newOrganizerInput.id = 'new_organizer_name';
             newOrganizerInput.name = 'new_organizer_name';
-            newOrganizerInput.required = false;
             newOrganizerInput.placeholder = 'Enter new organizer name';
             newOrganizerInput.className = 'form-control new-organizer-input';
             newOrganizerInput.style.display = 'none';
             bookingNameSelect.parentNode.insertBefore(newOrganizerInput, bookingNameSelect.nextSibling);
 
             bookingNameSelect.addEventListener('change', function() {
+                if (!this.options || !this.options.length) return; // Exit if no options
+
                 const selectedOption = this.options[this.selectedIndex];
+                if (!selectedOption) return; // Exit if no selected option
 
                 // Handle new organizer option
                 if (selectedOption.value === 'new') {
@@ -302,7 +279,7 @@ wp_localize_script('show-submissions-form-script', 'showSubmissions', array(
                     newOrganizerInput.style.display = 'block';
                     newOrganizerInput.required = true;
                     bookingNameSelect.required = false;
-                    bookingEmailInput.value = '';
+                    if (bookingEmailInput) bookingEmailInput.value = ''; // Check if email input exists
                     return;
                 }
 
@@ -312,11 +289,9 @@ wp_localize_script('show-submissions-form-script', 'showSubmissions', array(
                 bookingNameSelect.required = true;
                 bookingNameSelect.style.display = 'block';
 
-                const email = selectedOption.getAttribute('data-email');
-                if (email) {
-                    bookingEmailInput.value = email;
-                } else {
-                    bookingEmailInput.value = '';
+                if (bookingEmailInput) { // Check if email input exists
+                    const email = selectedOption.getAttribute('data-email');
+                    bookingEmailInput.value = email || '';
                 }
             });
 
@@ -367,7 +342,9 @@ wp_localize_script('show-submissions-form-script', 'showSubmissions', array(
                 venueSelect.required = true;
                 venueSelect.style.display = 'block';
                 venueAddressGroup.style.display = 'none';
-                document.getElementById('venue_address').required = false;
+                if (typeof document.getElementById('venue_address') !== 'undefined') {
+                    document.getElementById('venue_address').required = false;
+                }
 
                 if (selectedOption.value) {
                     venueAddressInput.value = selectedOption.getAttribute('data-address');

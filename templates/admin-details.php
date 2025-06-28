@@ -1,4 +1,6 @@
-<?php if (!defined('ABSPATH')) exit; ?>
+<?php if (!defined('ABSPATH')) exit;
+wp_enqueue_style('admin_style', show_submissions_get_asset_url('css/admin_style.min.css'), array(), '1.0.0');
+?>
 
 <div class="wrap">
     <h1>Show Submission Details</h1>
@@ -7,7 +9,7 @@
         <?php wp_nonce_field('save_submission_details', 'submission_nonce'); ?>
 
         <table class="form-table">
-            <tr>
+            <!-- <tr>
                 <th><label for="submitter_name">Submitter Name</label></th>
                 <td><input type="text" id="submitter_name" name="submitter_name" class="regular-text"
                     value="<?php echo esc_attr($submission->submitter_name); ?>"></td>
@@ -16,7 +18,7 @@
                 <th><label for="submitter_email">Submitter Email</label></th>
                 <td><input type="email" id="submitter_email" name="submitter_email" class="regular-text"
                     value="<?php echo esc_attr($submission->submitter_email); ?>"></td>
-            </tr>
+            </tr> -->
             <tr>
                 <th><label for="booking_name">Booking Name</label></th>
                 <td>
@@ -66,20 +68,42 @@
                     value="<?php echo esc_attr($submission->door_time); ?>"></td>
             </tr>
             <tr>
+                <th><label for="time_zone">Time Zone</label></th>
+                <td>
+                    <select id="time_zone" name="time_zone" class="regular-text">
+                        <?php
+                        // Get time zones from global constants
+                        $timeZones = Show_Submissions_Constants::get_time_zones();
+                        $current_timezone = esc_attr($submission->time_zone);
+                        
+                        foreach ($timeZones as $tz) {
+                            $selected = ($current_timezone === $tz['zone']) ? 'selected' : '';
+                            echo sprintf(
+                                '<option value="%s" %s>%s</option>',
+                                esc_attr($tz['zone']),
+                                $selected,
+                                esc_html($tz['name'])
+                            );
+                        }
+                        ?>
+                    </select>
+                </td>
+            </tr>
+            <!-- <tr>
                 <th><label for="music_start_time">Music Start Time</label></th>
                 <td><input type="time" id="music_start_time" name="music_start_time"
                     value="<?php echo esc_attr($submission->music_start_time); ?>"></td>
-            </tr>
+            </tr> -->
             <tr>
                 <th><label for="performers">Performers</label></th>
                 <td><textarea id="performers" name="performers" rows="3" clas="regular-text"><?php
                     echo esc_textarea($submission->performers); ?></textarea></td>
             </tr>
-            <tr>
+            <!-- <tr>
                 <th><label for="door_price">Door Price</label></th>
                 <td><input type="number" id="door_price" name="door_price" step="0.01"
                     value="<?php echo esc_attr($submission->door_price); ?>" class="regular-text"></td>
-            </tr>
+            </tr> -->
             <tr>
                 <th><label for="ticket_price">Ticket Price</label></th>
                 <td><input type="number" id="ticket_price" name="ticket_price" step="0.01"
@@ -90,11 +114,11 @@
                 <td><input type="url" id="show_link" name="show_link" class="regular-text"
                     value="<?php echo esc_url($submission->show_link); ?>"></td>
             </tr>
-            <tr>
+            <!-- <tr>
                 <th><label for="ticket_link">Ticket Link</label></th>
                 <td><input type="url" id="ticket_link" name="ticket_link" class="regular-text"
                     value="<?php echo esc_url($submission->ticket_link); ?>"></td>
-            </tr>
+            </tr> -->
             <tr>
                 <th>Images</th>
                 <td>
@@ -104,9 +128,10 @@
                         if ($images) {
                             foreach ($images as $image) {
                                 $image_url = SHOW_SUBMISSIONS_URL . 'assets/submissions/' . $image;
-                                echo '<div class="preview-item">';
+                                echo '<div class="preview-item submission-image">';
                                 echo '<img src="' . esc_url($image_url) . '" alt="Show Flyer">';
                                 echo '<button type="button" class="remove-image" data-filename="' . esc_attr($image) . '">×</button>';
+                                echo '<button type="button" class="add-to-media-library" data-filename="' . esc_attr($image) . '">Add to Media Library</button>';
                                 echo '</div>';
                             }
                         }

@@ -87,24 +87,63 @@ input:checked + .slider:before {
     margin-top: 20px;
 }
 
+.image-preview {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
 .submission-image {
     margin-bottom: 20px;
     padding: 10px;
     border: 1px solid #ddd;
     display: inline-block;
-    
+
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: auto;
+
     img {
         display: block;
         margin-bottom: 10px;
     }
 }
 
+.remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
 .submit-buttons {
     margin-top: 20px;
     padding: 20px 0;
     border-top: 1px solid #ddd;
-    
+
     .button {
         margin-right: 10px;
     }
+}
+
+
+.add-to-media-library {
+    display: block;
+    margin-top: 5px;
+    padding: 5px 10px;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.add-to-media-library:hover {
+    background: #135e96;
+    cursor: pointer;
+}
+
+.add-to-media-library:disabled {
+    background: #ccc;
+    cursor: not-allowed;
 }

@@ -37,6 +37,7 @@ jQuery(document).ready(function($) {
         const button = $(this);
         const filename = button.data('filename');
         const submissionId = new URLSearchParams(window.location.search).get('id');
+        const imageContainer = button.closest('.submission-image');
 
         button.prop('disabled', true).text('Processing...');
 
@@ -51,7 +52,29 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    button.closest('.submission-image').fadeOut();
+                    // Create "View in Media Library" link
+                    const viewLink = $('<a>', {
+                        href: `upload.php?item=${response.data.attachment_id}`,
+                        text: 'View in Media Library',
+                        class: 'button',
+                        target: '_blank'
+                    });
+
+                    // Replace the "Add to Media Library" button with the view link
+                    button.replaceWith(viewLink);
+
+                    // Show success message
+                    const message = $('<div>', {
+                        class: 'notice notice-success is-dismissible',
+                        style: 'margin-top: 10px;'
+                    }).text(response.data.message);
+
+                    imageContainer.append(message);
+
+                    // Fade out success message after 5 seconds
+                    setTimeout(() => {
+                        message.fadeOut(() => message.remove());
+                    }, 5000);
                 } else {
                     alert('Error: ' + response.data);
                     button.prop('disabled', false).text('Add to Media Library');

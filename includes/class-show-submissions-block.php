@@ -52,7 +52,7 @@ class Show_Submissions_Block {
             'showSubmissions',
             array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('show_submission_nonce')
+                'nonce' => wp_create_nonce('submit_show_nonce')
             )
         );
 
@@ -183,5 +183,84 @@ class Show_Submissions_Block {
             'message' => 'Show submission received successfully!',
             'submission_id' => $submission_id
         ));
+    }
+
+    public function add_to_media_library() {
+        check_ajax_referer('show_submissions_admin', 'nonce');
+
+        if (!current_user_can('upload_files')) {
+            wp_send_json_error('Permission denied');
+        }
+
+        $filename = sanitize_file_name($_POST['filename']);
+        $submission_id = intval($_POST['submission_id']);
+
+        // Get the file path
+        $file_path = SHOW_SUBMISSIONS_PATH . 'assets/submissions/' . $filename;
+
+        if (!file_exists($file_path)) {
+            wp_send_json_error('File not found');
+        }
+
+        // Check if file already exists in Media Library by comparing file hashes
+        $file_hash = md5_file($file_path);
+        $args = array(
+            'post_type' => 'attachment',
+            'posts_per_page' => 1,
+            'meta_query' => array(
+                array(
+                    'key' => '_file_hash',
+                    'value' => $file_hash
+                )
+            )
+        );
+
+        $existing_attachment = get_posts($args);
+
+        if (!empty($existing_attachment)) {
+            // File already exists in Media Library
+            wp_send_json_success(array(
+                'attachment_id' => $existing_attachment[0]->ID,
+                'message' => 'Image already exists in Media Library'
+            ));
+            return;
+        }
+
+        // Prepare file for upload
+        $file = array(
+            'name'     => $filename,
+            'tmp_name' => $file_path,
+            'error'    => 0,
+            'size'     => filesize($file_path),
+            'type'     => mime_content_type($file_path)
+        );
+
+        // Include required files for media handling
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+        // Copy file to temp location
+        $temp_file = wp_tempnam($filename);
+        copy($file_path, $temp_file);
+        $file['tmp_name'] = $temp_file;
+
+        // Insert into media library
+        $attachment_id = media_handle_sideload($file, 0);
+
+        if (is_wp_error($attachment_id)) {
+            @unlink($temp_file);
+            wp_send_json_error($attachment_id->get_error_message());
+        }
+
+        // Store file hash as attachment metadata
+        update_post_meta($attachment_id, '_file_hash', $file_hash);
+
+        @unlink($temp_file);
+        wp_send_json_success(array(
+            'attachment_id' => $attachment_id,
+            'message' => 'Image added to Media Library'
+        ));
+        die();
     }
 }
