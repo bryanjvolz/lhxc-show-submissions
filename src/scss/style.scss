@@ -222,7 +222,32 @@ input[name="ticket_price"] {
   width: auto;
 }
 
-// Add after your existing form-group styles
+.new-venue-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.venue-address-display {
+    display: none;
+    margin-left: 10px;
+    font-style: italic;
+    color: #666;
+}
+
+#venue_address_group,
+#step2 {
+  display: none;
+}
+
+// Handle JavaScript show/hide states
+#venue_address_group.show,
+#step2.show {
+  display: block;
+}
+
 .form-group {
   .pac-container {
     z-index: 1000;

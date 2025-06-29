@@ -374,4 +374,186 @@ document.addEventListener("DOMContentLoaded", function () {
   if (typeof google !== "undefined" && google.maps && google.maps.places) {
     initializeAutocomplete();
   }
+
+  // Handle organizer and venue selection
+  const bookingNameSelect = document.getElementById('booking_name');
+  const bookingEmailInput = document.getElementById('booking_email');
+
+  if (bookingNameSelect) {
+      const newOrganizerInput = document.createElement('input');
+
+      // Create new organizer input
+      newOrganizerInput.type = 'text';
+      newOrganizerInput.id = 'new_organizer_name';
+      newOrganizerInput.name = 'new_organizer_name';
+      newOrganizerInput.placeholder = 'Enter new organizer name';
+      newOrganizerInput.className = 'form-control new-organizer-input';
+      newOrganizerInput.style.display = 'none';
+      bookingNameSelect.parentNode.insertBefore(newOrganizerInput, bookingNameSelect.nextSibling);
+
+      bookingNameSelect.addEventListener('change', function() {
+          if (!this.options || !this.options.length) return;
+
+          const selectedOption = this.options[this.selectedIndex];
+          if (!selectedOption) return;
+
+          // Handle new organizer option
+          if (selectedOption.value === 'new') {
+              bookingNameSelect.style.display = 'none';
+              newOrganizerInput.style.display = 'block';
+              newOrganizerInput.required = true;
+              bookingNameSelect.required = false;
+              if (bookingEmailInput) bookingEmailInput.value = '';
+              return;
+          }
+
+          // Handle existing organizer selection
+          newOrganizerInput.style.display = 'none';
+          newOrganizerInput.required = false;
+          bookingNameSelect.required = true;
+          bookingNameSelect.style.display = 'block';
+
+          if (bookingEmailInput) {
+              const email = selectedOption.getAttribute('data-email');
+              bookingEmailInput.value = email || '';
+          }
+      });
+  }
+
+  // Handle venue selection and address display
+  const venueSelect = document.getElementById('venue_name');
+  const addressDisplay = document.getElementById('selected_venue_address');
+  const venueAddressInput = document.getElementById('venue_address_input');
+  const venueStreetInput = document.getElementById('venue_street');
+  const venueCityInput = document.getElementById('venue_city');
+  const venueStateInput = document.getElementById('venue_state');
+  const venueZipInput = document.getElementById('venue_zip');
+
+  if (venueSelect) {
+      const newVenueInput = document.createElement('input');
+
+      // Create new venue input
+      newVenueInput.type = 'text';
+      newVenueInput.id = 'new_venue_name';
+      newVenueInput.name = 'new_venue_name';
+      newVenueInput.placeholder = 'Enter new venue name';
+      newVenueInput.className = 'form-control new-venue-input';
+      newVenueInput.style.display = 'none';
+      newVenueInput.required = false;
+      venueSelect.parentNode.insertBefore(newVenueInput, venueSelect.nextSibling);
+
+      venueSelect.addEventListener('change', function() {
+          if (!this.options || !this.options.length) return;
+
+          const selectedOption = this.options[this.selectedIndex];
+          const venueAddressGroup = document.getElementById('venue_address_group');
+
+          // Update address display
+          if (selectedOption.value && selectedOption.value !== 'new') {
+              const address = selectedOption.getAttribute('data-address');
+              if (addressDisplay) {
+                  addressDisplay.textContent = address;
+                  addressDisplay.style.display = 'block';
+              }
+          } else {
+              if (addressDisplay) {
+                  addressDisplay.textContent = '';
+                  addressDisplay.style.display = 'none';
+              }
+          }
+
+          // Handle new venue option
+          if (selectedOption.value === 'new') {
+              venueSelect.style.display = 'none';
+              newVenueInput.style.display = 'block';
+              newVenueInput.required = true;
+              venueSelect.required = false;
+              if (venueAddressGroup) venueAddressGroup.style.display = 'block';
+              if (venueAddressInput) venueAddressInput.required = true;
+
+              // Clear address fields
+              if (venueAddressInput) venueAddressInput.value = '';
+              if (venueStreetInput) venueStreetInput.value = '';
+              if (venueCityInput) venueCityInput.value = '';
+              if (venueStateInput) venueStateInput.value = '';
+              if (venueZipInput) venueZipInput.value = '';
+              return;
+          }
+
+          // Handle existing venue selection
+          newVenueInput.style.display = 'none';
+          newVenueInput.required = false;
+          venueSelect.required = true;
+          venueSelect.style.display = 'block';
+          if (venueAddressGroup) venueAddressGroup.style.display = 'none';
+          if (venueAddressInput) venueAddressInput.required = false;
+
+          // Set address fields if venue is selected
+          if (selectedOption.value) {
+              if (venueAddressInput) venueAddressInput.value = selectedOption.getAttribute('data-address') || '';
+              if (venueStreetInput) venueStreetInput.value = selectedOption.getAttribute('data-street') || '';
+              if (venueCityInput) venueCityInput.value = selectedOption.getAttribute('data-city') || '';
+              if (venueStateInput) venueStateInput.value = selectedOption.getAttribute('data-state') || '';
+              if (venueZipInput) venueZipInput.value = selectedOption.getAttribute('data-zip') || '';
+          }
+      });
+  }
+
+  // Google Places Autocomplete
+  function initGooglePlacesAutocomplete() {
+      const addressInput = document.getElementById('venue_address_input');
+      if (!addressInput) return;
+  
+      const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+          types: ['address'],
+          componentRestrictions: {
+              country: 'us'
+          }
+      });
+  
+      autocomplete.addListener('place_changed', function() {
+          const place = autocomplete.getPlace();
+          let street = '',
+              city = '',
+              state = '',
+              zip = '';
+  
+          // Extract address components
+          for (const component of place.address_components) {
+              const type = component.types[0];
+              switch (type) {
+                  case 'street_number':
+                      street = component.long_name + ' ';
+                      break;
+                  case 'route':
+                      street += component.long_name;
+                      break;
+                  case 'locality':
+                      city = component.long_name;
+                      break;
+                  case 'administrative_area_level_1':
+                      state = component.short_name;
+                      break;
+                  case 'postal_code':
+                      zip = component.long_name;
+                      break;
+              }
+          }
+  
+          // Update hidden fields
+          document.getElementById('venue_street').value = street;
+          document.getElementById('venue_city').value = city;
+          document.getElementById('venue_state').value = state;
+          document.getElementById('venue_zip').value = zip;
+          document.getElementById('venue_address').value = place.formatted_address;
+      });
+  }
+  
+  // Initialize Google Places when the API is loaded
+  if (typeof google === 'object' && typeof google.maps === 'object') {
+      initGooglePlacesAutocomplete();
+  } else {
+      // If Google Maps isn't loaded yet, wait for it
+      window.initGooglePlacesAutocomplete = initGooglePlacesAutocomplete;
+  }
 });

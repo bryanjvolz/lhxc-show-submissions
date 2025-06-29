@@ -27,7 +27,8 @@ require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-admin.php'
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-settings.php';
 require_once plugin_dir_path(__FILE__) . 'includes/class-show-submissions-constants.php';
 
-// Initialize settings
+// Initialize settings and constants
+Show_Submissions_Constants::get_instance();
 new Show_Submissions_Settings();
 
 // Activation/Deactivation hooks
@@ -49,7 +50,7 @@ define('SHOW_SUBMISSIONS_DIST_URL', SHOW_SUBMISSIONS_URL . 'dist/');
 // Add this function
 function show_submissions_get_asset_url($asset) {
     if (SHOW_SUBMISSIONS_DEV_MODE) {
-        return 'http://localhost:5173/' . $asset;
+        return 'http://localhost:10004/' . $asset;
     }
     return SHOW_SUBMISSIONS_DIST_URL . $asset;
 }

@@ -1,4 +1,6 @@
 <?php
+require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-constants.php';
+
 class Show_Submissions_Admin {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'), 10);
@@ -68,20 +70,21 @@ class Show_Submissions_Admin {
             'venue_address' => sanitize_textarea_field($_POST['venue_address']),
             'show_date' => sanitize_text_field($_POST['show_date']),
             'door_time' => sanitize_text_field($_POST['door_time']),
+            'time_zone' => sanitize_text_field($_POST['time_zone']),
             'music_start_time' => sanitize_text_field($_POST['music_start_time']),
             'performers' => sanitize_textarea_field($_POST['performers']),
             'door_price' => floatval($_POST['door_price']),
             'ticket_price' => floatval($_POST['ticket_price']),
             'show_link' => esc_url_raw($_POST['show_link']),
             'ticket_link' => esc_url_raw($_POST['ticket_link']),
-            'approved' => isset($_POST['approved']) ? 1 : 0  // Add this line
+            'approved' => isset($_POST['approved']) ? 1 : 0
         );
 
         $wpdb->update(
             $table_name,
             $data,
             array('id' => intval($_POST['submission_id'])),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%d'),  // Add '%d' for approved
+            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d'),  // Updated format array
             array('%d')
         );
 

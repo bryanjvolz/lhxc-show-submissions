@@ -73,13 +73,23 @@ class Show_Submissions_Block {
             wp_mkdir_p($upload_dir);
         }
 
+        // Check if new organizer name is provided and use it instead of booking_name
+        $booking_name = isset($_POST['new_organizer_name']) && !empty($_POST['new_organizer_name'])
+            ? sanitize_text_field($_POST['new_organizer_name'])
+            : sanitize_text_field($_POST['booking_name']);
+
+        $venue_name = isset($_POST['new_venue_name']) && !empty($_POST['new_venue_name'])
+        ? sanitize_text_field($_POST['new_venue_name'])
+        : sanitize_text_field($_POST['venue_name']);
+
         // Collect form data
         $submission_data = array(
             'submitter_name' => sanitize_text_field($_POST['submitter_name']),
             'submitter_email' => sanitize_email($_POST['submitter_email']),
-            'booking_name' => sanitize_text_field($_POST['booking_name']),
+            'booking_name' => $booking_name,
             'booking_email' => sanitize_email($_POST['booking_email']),
-            'venue_name' => sanitize_text_field($_POST['venue_name']),
+            // 'venue_name' => sanitize_text_field($_POST['venue_name']),
+            'venue_name' => $venue_name,
             'venue_address' => sanitize_textarea_field($_POST['venue_address']),
             'show_date' => sanitize_text_field($_POST['show_date']),
             'door_time' => sanitize_text_field($_POST['door_time']),

@@ -1,7 +1,10 @@
 <?php
 if (!defined('ABSPATH')) exit;
-date_default_timezone_set('America/Kentucky/Louisville');
 
+// Include the constants class
+require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-constants.php';
+
+date_default_timezone_set('America/Kentucky/Louisville');
 
 // Check if The Events Calendar is active
 $events_calendar_active = class_exists('Tribe__Events__Main');
@@ -12,17 +15,6 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
         <form id="showSubmissionStep1" class="show-submission-form" action="/" title="Show Submission Form">
             <div class="column">
                 <formgroup class="random-bg form-columns">
-                    <!-- Temporarily hidden
-                    <div class="form-group">
-                        <label for="submitter_name">Your Name *</label>
-                        <input type="text" id="submitter_name" name="submitter_name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="submitter_email">Your Email *</label>
-                        <input type="email" id="submitter_email" name="submitter_email" required>
-                    </div>
-                    -->
                     <?php if ($events_calendar_active): ?>
                         <div class="form-group">
                             <label for="booking_name">Organizer *</label>
@@ -54,7 +46,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                     <?php else: ?>
                         <div class="form-group">
                             <label for="booking_name">Booking Name *</label>
-                            <input type="text" id="booking_name" name="booking_name" required>
+                            <input type="text" id="booking_name" name="booking_name" required="true">
                         </div>
                     <?php endif; ?>
 
@@ -68,7 +60,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                     <?php if ($events_calendar_active): ?>
                         <div class="form-group">
                             <label for="venue_name">Venue *</label>
-                            <select id="venue_name" name="venue_name" required>
+                            <select id="venue_name" name="venue_name" required="true">
                                 <option value="">Select a Venue</option>
                                 <option value="new">+ Add New Venue</option>
                                 <?php
@@ -101,7 +93,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                                         data-city="' . esc_attr($address['city']) . '"
                                         data-state="' . esc_attr($address['state']) . '"
                                         data-zip="' . esc_attr($address['zip']) . '">' .
-                                        esc_html($venue->post_title) . '</option>';
+                                        trim(esc_html($venue->post_title)) . '</option>';
                                 }
                                 ?>
                             </select>
@@ -114,7 +106,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                         </div>
                     <?php endif; ?>
 
-                    <div class="form-group" id="venue_address_group" style="display: none;">
+                    <div class="form-group" id="venue_address_group">
                         <label for="venue_address_input">Venue Address *</label>
                         <input type="text" id="venue_address_input" name="venue_address" class="google-places-autocomplete" placeholder="Start typing venue address...">
 
@@ -123,7 +115,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                         <input type="hidden" id="venue_city" name="venue_city">
                         <input type="hidden" id="venue_state" name="venue_state">
                         <input type="hidden" id="venue_zip" name="venue_zip">
-                        <input type="hidden" id="venue_address_hidden" name="venue_address">
+                        <input type="hidden" id="venue_address" name="venue_address">
                     </div>
                 </formgroup>
 
@@ -143,20 +135,44 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
                         <select id="time_zone" name="time_zone" required>
                             <option value="">Select Time Zone</option>
                             <?php
-                            // Get time zones from global constants
-                            $timeZones = Show_Submissions_Constants::get_time_zones();
-                            foreach ($timeZones as $tz) {
-                                $offset = (new DateTimeZone($tz['zone']))->getOffset(new DateTime());
-                                $tzAbbr = (new DateTime('now', new DateTimeZone($tz['zone'])))->format('T');
-                                
-                                echo sprintf(
-                                    '<option value="%s" data-utc-offset="%s" %s>%s (%s)</option>',
-                                    esc_attr($tz['zone']),
-                                    esc_attr($offset),
-                                    esc_attr($tz['zone'] === date_default_timezone_get() ? 'selected' : ''),
-                                    esc_html($tz['name']),
-                                    esc_html($tzAbbr)
-                                );
+                            try {
+                                // Get time zones from global constants
+                                $constants = Show_Submissions_Constants::get_instance();
+                                if (!$constants) {
+                                    throw new Exception('Constants class not initialized');
+                                }
+
+                                $timeZones = $constants->get_time_zones();
+                                if (!is_array($timeZones)) {
+                                    throw new Exception('Invalid timezone data');
+                                }
+
+                                foreach ($timeZones as $tz) {
+                                    if (!isset($tz['zone']) || !isset($tz['name'])) {
+                                        continue;
+                                    }
+
+                                    try {
+                                        $timezone = new DateTimeZone($tz['zone']);
+                                        $offset = $timezone->getOffset(new DateTime());
+                                        $tzAbbr = (new DateTime('now', $timezone))->format('T');
+
+                                        echo sprintf(
+                                            '<option value="%s" data-utc-offset="%s" %s>%s (%s)</option>',
+                                            esc_attr($tz['zone']),
+                                            esc_attr($offset),
+                                            esc_attr($tz['zone'] === date_default_timezone_get() ? 'selected' : ''),
+                                            esc_html($tz['name']),
+                                            esc_html($tzAbbr)
+                                        );
+                                    } catch (Exception $e) {
+                                        error_log('Timezone error for ' . $tz['zone'] . ': ' . $e->getMessage());
+                                        continue;
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                error_log('Show Submissions timezone error: ' . $e->getMessage());
+                                echo '<option value="America/Kentucky/Louisville">Louisville Time (EDT)</option>';
                             }
                             ?>
                         </select>
@@ -225,7 +241,7 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
     </div>
 
     <!-- Step 2: Review -->
-    <div class="form-step" id="step2" style="display: none;">
+    <div class="form-step" id="step2">
         <h2>Review Your Submission</h2>
         <div id="submissionReview"></div>
         <div class="button-group">
@@ -236,242 +252,9 @@ $events_calendar_active = class_exists('Tribe__Events__Main');
 </div>
 
 <?php
-// Enqueue the required assets
-// wp_enqueue_style('show-submissions-form-style', show_submissions_get_asset_url('css/style.min.css'), array(), '1.0.0');
-// wp_enqueue_script('show-submissions-form-script', show_submissions_get_asset_url('js/form.min.js'), array('jquery'), '1.0.0', true);
-
 // Add the necessary AJAX URL for the form submission
 wp_localize_script('show-submissions-form-script', 'showSubmissions', array(
     'ajaxurl' => admin_url('admin-ajax.php'),
     'nonce' => wp_create_nonce('submit_show_nonce')  // Updated nonce name
 ));
 ?>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        <?php if ($events_calendar_active): ?>
-            // Handle organizer selection
-            const bookingNameSelect = document.getElementById('booking_name');
-            const bookingEmailInput = document.getElementById('booking_email');
-
-            if (!bookingNameSelect) return; // Exit if select element doesn't exist
-
-            const newOrganizerInput = document.createElement('input');
-
-            // Create new organizer input
-            newOrganizerInput.type = 'text';
-            newOrganizerInput.id = 'new_organizer_name';
-            newOrganizerInput.name = 'new_organizer_name';
-            newOrganizerInput.placeholder = 'Enter new organizer name';
-            newOrganizerInput.className = 'form-control new-organizer-input';
-            newOrganizerInput.style.display = 'none';
-            bookingNameSelect.parentNode.insertBefore(newOrganizerInput, bookingNameSelect.nextSibling);
-
-            bookingNameSelect.addEventListener('change', function() {
-                if (!this.options || !this.options.length) return; // Exit if no options
-
-                const selectedOption = this.options[this.selectedIndex];
-                if (!selectedOption) return; // Exit if no selected option
-
-                // Handle new organizer option
-                if (selectedOption.value === 'new') {
-                    bookingNameSelect.style.display = 'none';
-                    newOrganizerInput.style.display = 'block';
-                    newOrganizerInput.required = true;
-                    bookingNameSelect.required = false;
-                    if (bookingEmailInput) bookingEmailInput.value = ''; // Check if email input exists
-                    return;
-                }
-
-                // Handle existing organizer selection
-                newOrganizerInput.style.display = 'none';
-                newOrganizerInput.required = false;
-                bookingNameSelect.required = true;
-                bookingNameSelect.style.display = 'block';
-
-                if (bookingEmailInput) { // Check if email input exists
-                    const email = selectedOption.getAttribute('data-email');
-                    bookingEmailInput.value = email || '';
-                }
-            });
-
-            // Handle venue selection
-            const venueSelect = document.getElementById('venue_name');
-            const venueAddressInput = document.getElementById('venue_address');
-            const venueStreetInput = document.getElementById('venue_street');
-            const venueCityInput = document.getElementById('venue_city');
-            const venueStateInput = document.getElementById('venue_state');
-            const venueZipInput = document.getElementById('venue_zip');
-            const newVenueInput = document.createElement('input');
-
-            // Create new venue input
-            newVenueInput.type = 'text';
-            newVenueInput.id = 'new_venue_name';
-            newVenueInput.name = 'new_venue_name';
-            newVenueInput.required = false;
-            newVenueInput.placeholder = 'Enter new venue name';
-            newVenueInput.className = 'form-control new-venue-input';
-            newVenueInput.style.display = 'none';
-            venueSelect.parentNode.insertBefore(newVenueInput, venueSelect.nextSibling);
-
-            venueSelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const venueAddressGroup = document.getElementById('venue_address_group');
-
-                // Handle new venue option
-                if (selectedOption.value === 'new') {
-                    venueSelect.style.display = 'none';
-                    newVenueInput.style.display = 'block';
-                    newVenueInput.required = true;
-                    venueSelect.required = false;
-                    venueAddressGroup.style.display = 'block';
-                    document.getElementById('venue_address').required = true;
-
-                    // Clear address fields
-                    venueAddressInput.value = '';
-                    venueStreetInput.value = '';
-                    venueCityInput.value = '';
-                    venueStateInput.value = '';
-                    venueZipInput.value = '';
-                    return;
-                }
-
-                // Handle existing venue selection
-                newVenueInput.style.display = 'none';
-                newVenueInput.required = false;
-                venueSelect.required = true;
-                venueSelect.style.display = 'block';
-                venueAddressGroup.style.display = 'none';
-                if (typeof document.getElementById('venue_address') !== 'undefined') {
-                    document.getElementById('venue_address').required = false;
-                }
-
-                if (selectedOption.value) {
-                    venueAddressInput.value = selectedOption.getAttribute('data-address');
-                    venueStreetInput.value = selectedOption.getAttribute('data-street');
-                    venueCityInput.value = selectedOption.getAttribute('data-city');
-                    venueStateInput.value = selectedOption.getAttribute('data-state');
-                    venueZipInput.value = selectedOption.getAttribute('data-zip');
-                } else {
-                    venueAddressInput.value = '';
-                    venueStreetInput.value = '';
-                    venueCityInput.value = '';
-                    venueStateInput.value = '';
-                    venueZipInput.value = '';
-                }
-            });
-        <?php endif; ?>
-
-        // generate random figures for background card rotations
-        const randomBgs = document.querySelectorAll('.random-bg');
-        // console.table(randomBgs);
-
-        function generateRandomRotation(elem) {
-            // console.log(this);
-            const min = -.85;
-            const max = .85;
-            const rotateAmount = (Math.random() * (max - min + 1) + min);
-            elem.style.setProperty('--rotate-amt', rotateAmount + 'deg');
-        }
-        Array.prototype.forEach.call(randomBgs, function(element) {
-            generateRandomRotation(element);
-        });
-    });
-</script>
-
-<style>
-    .new-venue-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-top: 5px;
-    }
-</style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const venueSelect = document.getElementById('venue_name');
-        const addressDisplay = document.getElementById('selected_venue_address');
-
-        venueSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value && selectedOption.value !== 'new') {
-                const address = selectedOption.getAttribute('data-address');
-                addressDisplay.textContent = address;
-                addressDisplay.style.display = 'block';
-            } else {
-                addressDisplay.textContent = '';
-                addressDisplay.style.display = 'none';
-            }
-        });
-    });
-</script>
-
-<style>
-    .venue-address-display {
-        display: none;
-        margin-left: 10px;
-        font-style: italic;
-        color: #666;
-    }
-</style>
-
-<script>
-    function initGooglePlacesAutocomplete() {
-        const addressInput = document.getElementById('venue_address_input');
-        if (!addressInput) return;
-
-        const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-            types: ['address'],
-            componentRestrictions: {
-                country: 'us'
-            }
-        });
-
-        autocomplete.addListener('place_changed', function() {
-            const place = autocomplete.getPlace();
-            let street = '',
-                city = '',
-                state = '',
-                zip = '';
-
-            // Extract address components
-            for (const component of place.address_components) {
-                const type = component.types[0];
-                switch (type) {
-                    case 'street_number':
-                        street = component.long_name + ' ';
-                        break;
-                    case 'route':
-                        street += component.long_name;
-                        break;
-                    case 'locality':
-                        city = component.long_name;
-                        break;
-                    case 'administrative_area_level_1':
-                        state = component.short_name;
-                        break;
-                    case 'postal_code':
-                        zip = component.long_name;
-                        break;
-                }
-            }
-
-            // Update hidden fields
-            document.getElementById('venue_street').value = street;
-            document.getElementById('venue_city').value = city;
-            document.getElementById('venue_state').value = state;
-            document.getElementById('venue_zip').value = zip;
-            document.getElementById('venue_address').value = place.formatted_address;
-        });
-    }
-
-    // Initialize Google Places when the API is loaded
-    if (typeof google === 'object' && typeof google.maps === 'object') {
-        initGooglePlacesAutocomplete();
-    } else {
-        // If Google Maps isn't loaded yet, wait for it
-        window.initGooglePlacesAutocomplete = initGooglePlacesAutocomplete;
-    }
-</script>
