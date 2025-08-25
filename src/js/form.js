@@ -499,7 +499,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  // Google Places Autocomplete
+  // Move the Google Places Autocomplete function outside the DOMContentLoaded listener
   function initGooglePlacesAutocomplete() {
       const addressInput = document.getElementById('venue_address_input');
       if (!addressInput) return;
@@ -541,17 +541,24 @@ document.addEventListener("DOMContentLoaded", function () {
           }
   
           // Update hidden fields
-          document.getElementById('venue_street').value = street;
-          document.getElementById('venue_city').value = city;
-          document.getElementById('venue_state').value = state;
-          document.getElementById('venue_zip').value = zip;
-          document.getElementById('venue_address').value = place.formatted_address;
+          const venueStreet = document.getElementById('venue_street');
+          const venueCity = document.getElementById('venue_city');
+          const venueState = document.getElementById('venue_state');
+          const venueZip = document.getElementById('venue_zip');
+          const venueAddress = document.getElementById('venue_address');
+          
+          if (venueStreet) venueStreet.value = street;
+          if (venueCity) venueCity.value = city;
+          if (venueState) venueState.value = state;
+          if (venueZip) venueZip.value = zip;
+          if (venueAddress) venueAddress.value = place.formatted_address;
       });
   }
   
   // Initialize Google Places when the API is loaded
   if (typeof google === 'object' && typeof google.maps === 'object') {
-      initGooglePlacesAutocomplete();
+      // Initialize immediately if Google Maps is already loaded
+      document.addEventListener('DOMContentLoaded', initGooglePlacesAutocomplete);
   } else {
       // If Google Maps isn't loaded yet, wait for it
       window.initGooglePlacesAutocomplete = initGooglePlacesAutocomplete;
