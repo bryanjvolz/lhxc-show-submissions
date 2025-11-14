@@ -8,6 +8,8 @@ require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-constants.
 class Show_Submissions_Admin {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'), 10);
+        // Decorate main menu label with a bubble showing 'New' count
+        add_action('admin_menu', array($this, 'decorate_menu_with_new_count'), 99);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         // Add AJAX handlers
         add_action('wp_ajax_update_submission_approval', array($this, 'update_submission_approval'));
@@ -33,6 +35,42 @@ class Show_Submissions_Admin {
             'show-submission-details',
             array($this, 'render_submission_details')
         );
+    }
+
+    /**
+     * Adds a red bubble badge to the main "Show Submissions" admin menu item
+     * displaying the number of submissions marked as 'New'.
+     */
+    public function decorate_menu_with_new_count() {
+        global $menu, $wpdb;
+
+        if (!is_array($menu)) {
+            return;
+        }
+
+        // Count submissions with status 'New'
+        $table = $wpdb->prefix . 'lhxc_show_submissions';
+        $count = 0;
+        $sql = "SELECT COUNT(*) FROM {$table} WHERE status = 'New'";
+        $db_count = $wpdb->get_var($sql);
+        if (is_numeric($db_count)) {
+            $count = (int)$db_count;
+        }
+
+        if ($count <= 0) {
+            return; // No bubble when there are no new submissions
+        }
+
+        $display_count = function_exists('number_format_i18n') ? number_format_i18n($count) : (string)$count;
+
+        // Find our top-level menu item by slug and append the bubble
+        foreach ($menu as $index => $item) {
+            if (!empty($item[2]) && $item[2] === 'show-submissions') {
+                $menu[$index][0] = 'Show Submissions ' .
+                    '<span class="update-plugins count-' . $count . '"><span class="update-count">' . esc_html($display_count) . '</span></span>';
+                break;
+            }
+        }
     }
 
     public function render_submission_details() {

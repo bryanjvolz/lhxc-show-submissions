@@ -125,6 +125,7 @@ if (!defined('SHOW_SUBMISSIONS_WP_STUBS_LOADED')) {
     if (!function_exists('settings_fields')) { function settings_fields($option_group) { /* no-op */ } }
     if (!function_exists('do_settings_sections')) { function do_settings_sections($page) { /* no-op */ } }
     if (!function_exists('submit_button')) { function submit_button($text = 'Save Changes') { echo '<button type="submit">' . htmlspecialchars($text) . '</button>'; } }
+    if (!function_exists('number_format_i18n')) { function number_format_i18n($number, $decimals = 0) { return number_format((float)$number, (int)$decimals); } }
 
     // Media and uploads
     if (!function_exists('wp_upload_dir')) {
