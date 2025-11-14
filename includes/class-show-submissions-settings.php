@@ -1,4 +1,8 @@
 <?php
+// Load stubs for non-WP tooling if core hooks are unavailable
+if (!function_exists('add_action')) {
+    require_once __DIR__ . '/wp-stubs.php';
+}
 class Show_Submissions_Settings {
     public function __construct() {
         add_action('admin_init', array($this, 'register_settings'));

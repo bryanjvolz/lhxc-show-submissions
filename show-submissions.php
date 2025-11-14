@@ -10,6 +10,11 @@
  * License: GPL v2 or later
  */
 
+// Load lightweight WP stubs for non-WP tooling environments (safe no-ops in WP)
+if (!function_exists('add_action')) {
+    require_once __DIR__ . '/includes/wp-stubs.php';
+}
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -26,6 +31,7 @@ require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-block.php'
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-admin.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-settings.php';
 require_once plugin_dir_path(__FILE__) . 'includes/class-show-submissions-constants.php';
+require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-db.php';
 
 // Initialize settings and constants
 Show_Submissions_Constants::get_instance();
@@ -39,6 +45,11 @@ register_deactivation_hook(__FILE__, array('Show_Submissions_Deactivator', 'deac
 add_action('init', 'initialize_show_submissions');
 
 function initialize_show_submissions() {
+    // Ensure DB schema is up to date (adds status column if missing)
+    if (class_exists('Show_Submissions_DB')) {
+        Show_Submissions_DB::maybe_upgrade();
+    }
+
     new Show_Submissions_Block();
     new Show_Submissions_Admin();
 }

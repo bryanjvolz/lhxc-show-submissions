@@ -152,6 +152,23 @@ wp_enqueue_style('admin_style', show_submissions_get_asset_url('css/admin_style.
                     </label>
                 </td>
             </tr>
+            <tr>
+                <th><label for="status">Status</label></th>
+                <td>
+                    <select id="status" name="status">
+                        <?php
+                        $statuses = array('New', 'Edited', 'Approved', 'Archived');
+                        $current_status = isset($submission->status) && $submission->status ? $submission->status : 'New';
+                        foreach ($statuses as $st) {
+                            printf('<option value="%s" %s>%s</option>', esc_attr($st), selected($current_status, $st, false), esc_html($st));
+                        }
+                        ?>
+                    </select>
+                    <?php if (!empty($submission->status) && $submission->status === 'Approved') : ?>
+                        <p class="description">Editing is locked while status is Approved. Change status to edit other fields.</p>
+                    <?php endif; ?>
+                </td>
+            </tr>
         </table>
 
         <div class="submit-buttons">

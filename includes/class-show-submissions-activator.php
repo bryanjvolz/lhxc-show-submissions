@@ -23,6 +23,7 @@ class Show_Submissions_Activator {
             ticket_link varchar(255),
             images text,
             approved tinyint(1) DEFAULT 0,
+            status varchar(20) NOT NULL DEFAULT 'New',
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id)
         ) $charset_collate";

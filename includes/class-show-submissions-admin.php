@@ -1,4 +1,8 @@
 <?php
+// Load stubs for non-WP tooling if core hooks are unavailable
+if (!function_exists('add_action')) {
+    require_once __DIR__ . '/wp-stubs.php';
+}
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-constants.php';
 
 class Show_Submissions_Admin {
@@ -60,33 +64,145 @@ class Show_Submissions_Admin {
 
         global $wpdb;
         $table_name = $wpdb->prefix . 'lhxc_show_submissions';
+        $existing = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            intval($_POST['submission_id'])
+        ));
 
-        $data = array(
-            'submitter_name' => sanitize_text_field($_POST['submitter_name']),
-            'submitter_email' => sanitize_email($_POST['submitter_email']),
-            'booking_name' => sanitize_text_field($_POST['booking_name']),
-            'booking_email' => sanitize_email($_POST['booking_email']),
-            'venue_name' => sanitize_text_field($_POST['venue_name']),
-            'venue_address' => sanitize_textarea_field($_POST['venue_address']),
-            'show_date' => sanitize_text_field($_POST['show_date']),
-            'door_time' => sanitize_text_field($_POST['door_time']),
-            'time_zone' => sanitize_text_field($_POST['time_zone']),
-            'music_start_time' => sanitize_text_field($_POST['music_start_time']),
-            'performers' => sanitize_textarea_field($_POST['performers']),
-            'door_price' => floatval($_POST['door_price']),
-            'ticket_price' => floatval($_POST['ticket_price']),
-            'show_link' => esc_url_raw($_POST['show_link']),
-            'ticket_link' => esc_url_raw($_POST['ticket_link']),
-            'approved' => isset($_POST['approved']) ? 1 : 0
-        );
+        // Allowed statuses
+        $allowed_statuses = array('New', 'Edited', 'Approved', 'Archived');
+        $posted_status = isset($_POST['status']) ? sanitize_text_field($_POST['status']) : '';
+        $posted_status = in_array($posted_status, $allowed_statuses, true) ? $posted_status : '';
 
-        $wpdb->update(
+        // If currently Approved and still Approved, lock fields except status/approved
+        if ($existing && isset($existing->status) && $existing->status === 'Approved' && $posted_status === 'Approved') {
+            $data = array(
+                'status' => 'Approved',
+                'approved' => 1
+            );
+        } else {
+            $data = array(
+                'submitter_name' => sanitize_text_field($_POST['submitter_name'] ?? ''),
+                'submitter_email' => sanitize_email($_POST['submitter_email'] ?? ''),
+                'booking_name' => sanitize_text_field($_POST['booking_name'] ?? ''),
+                'booking_email' => sanitize_email($_POST['booking_email'] ?? ''),
+                'venue_name' => sanitize_text_field($_POST['venue_name'] ?? ''),
+                'venue_address' => sanitize_textarea_field($_POST['venue_address'] ?? ''),
+                'show_date' => sanitize_text_field($_POST['show_date'] ?? ''),
+                'door_time' => sanitize_text_field($_POST['door_time'] ?? ''),
+                'time_zone' => sanitize_text_field($_POST['time_zone'] ?? ''),
+                'music_start_time' => sanitize_text_field($_POST['music_start_time'] ?? ''),
+                'performers' => sanitize_textarea_field($_POST['performers'] ?? ''),
+                'door_price' => isset($_POST['door_price']) ? floatval($_POST['door_price']) : 0,
+                'ticket_price' => isset($_POST['ticket_price']) ? floatval($_POST['ticket_price']) : 0,
+                'show_link' => esc_url_raw($_POST['show_link'] ?? ''),
+                'ticket_link' => esc_url_raw($_POST['ticket_link'] ?? ''),
+                'approved' => intval($_POST['approved'] ?? 0),
+            );
+
+            // Determine status: explicit selection wins; otherwise set to Edited on save
+            if ($posted_status) {
+                $data['status'] = $posted_status;
+            } else {
+                $data['status'] = 'Edited';
+            }
+
+            // Sync approved and status consistency
+            if ($data['approved'] === 1 || $data['status'] === 'Approved') {
+                $data['approved'] = 1;
+                $data['status'] = 'Approved';
+            } elseif ($data['status'] !== 'Approved') {
+                // When not approved ensure approved flag is 0 unless explicitly set
+                $data['approved'] = intval($_POST['approved'] ?? 0);
+            }
+        }
+
+        $result = $wpdb->update(
             $table_name,
             $data,
             array('id' => intval($_POST['submission_id'])),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d'),  // Updated format array
+            // Formats: allow for both minimal (locked) or full updates
+            array_map(function($k){
+                // Basic format mapping for known fields
+                $map = array(
+                    'submitter_name' => '%s',
+                    'submitter_email' => '%s',
+                    'booking_name' => '%s',
+                    'booking_email' => '%s',
+                    'venue_name' => '%s',
+                    'venue_address' => '%s',
+                    'show_date' => '%s',
+                    'door_time' => '%s',
+                    'time_zone' => '%s',
+                    'music_start_time' => '%s',
+                    'performers' => '%s',
+                    'door_price' => '%f',
+                    'ticket_price' => '%f',
+                    'show_link' => '%s',
+                    'ticket_link' => '%s',
+                    'approved' => '%d',
+                    'status' => '%s',
+                );
+                return $map[$k] ?? '%s';
+            }, array_keys($data)),
             array('%d')
         );
+
+        if ($result === false) {
+            $error = $wpdb->last_error ? $wpdb->last_error : 'Unknown DB error';
+            add_action('admin_notices', function() use ($error) {
+                echo '<div class="notice notice-error is-dismissible"><p>Failed to save submission: ' . esc_html($error) . '</p></div>';
+            });
+            return;
+        }
+
+        // Create TEC event when approval flips from 0 -> 1
+        // Re-read to determine approval transition, considering status logic above
+        $nowApproved = (isset($data['approved']) && intval($data['approved']) === 1) ? 1 : 0;
+        if ($existing && intval($existing->approved) === 0 && $nowApproved === 1) {
+            $submission = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table_name WHERE id = %d",
+                intval($_POST['submission_id'])
+            ));
+
+            if ($submission) {
+                $event_date = $submission->show_date;
+                $start_time = $submission->music_start_time;
+                $door_time = $submission->door_time;
+
+                $venue_title = is_numeric($submission->venue_name)
+                    ? (function_exists('get_the_title') ? get_the_title((int)$submission->venue_name) : ('Venue #' . (int)$submission->venue_name))
+                    : $submission->venue_name;
+
+                $event_data = array(
+                    'post_title'   => sprintf('Show at %s', $venue_title),
+                    'post_content' => $submission->performers,
+                    'post_status'  => 'publish',
+                    'post_type'    => 'tribe_events',
+                    'meta_input'   => array(
+                        '_EventStartDate'    => trim($event_date . ' ' . $start_time),
+                        '_EventEndDate'      => trim($event_date . ' ' . date('H:i:s', strtotime($start_time . ' +3 hours'))),
+                        '_EventVenueID'      => $this->get_or_use_venue_id($submission),
+                        '_EventURL'          => $submission->show_link,
+                        '_EventCost'         => $submission->ticket_price,
+                        '_EventDoorTime'     => $door_time,
+                        '_EventShowLink'     => $submission->show_link,
+                        '_EventTicketLink'   => $submission->ticket_link
+                    )
+                );
+
+                $event_id = wp_insert_post($event_data);
+                if (!is_wp_error($event_id) && !empty($submission->images)) {
+                    $images = explode(',', $submission->images);
+                    foreach ($images as $image) {
+                        $image_path = SHOW_SUBMISSIONS_HOLDING_DIR . $image;
+                        if (file_exists($image_path)) {
+                            $this->attach_image_to_event($event_id, $image_path);
+                        }
+                    }
+                }
+            }
+        }
 
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success is-dismissible"><p>Submission updated successfully.</p></div>';
@@ -130,6 +246,7 @@ class Show_Submissions_Admin {
                         <th>Venue</th>
                         <th>Performers</th>
                         <th>Approval Status</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -141,9 +258,11 @@ class Show_Submissions_Admin {
                     ?>
                         <tr data-id="<?php echo esc_attr($submission->id); ?>">
                             <td>
-                                <img src="<?php echo esc_url($image_path); ?>"
+                                <a href="<?php echo esc_url($image_path); ?>" target="_blank">
+                                    <img src="<?php echo esc_url($image_path); ?>"
                                      alt="Show Flyer"
                                      style="width: 50px; height: 50px; object-fit: cover;">
+                                </a>
                             </td>
                             <td><?php echo esc_html(date('Y-m-d', strtotime($submission->created_at))); ?></td>
                             <td><?php echo esc_html($submission->show_date); ?></td>
@@ -156,6 +275,7 @@ class Show_Submissions_Admin {
                                     <span class="slider round"></span>
                                 </label>
                             </td>
+                            <td><?php echo esc_html(isset($submission->status) ? $submission->status : ''); ?></td>
                             <td>
                                 <a href="<?php echo admin_url('admin.php?page=show-submission-details&id=' . $submission->id); ?>"
                                    class="button">View Details</a>
@@ -191,11 +311,16 @@ class Show_Submissions_Admin {
             wp_send_json_error('Submission not found');
         }
 
+        $update_data = array('approved' => $approved ? 1 : 0);
+        if ($approved) {
+            $update_data['status'] = 'Approved';
+        }
+
         $result = $wpdb->update(
             $table_name,
-            array('approved' => $approved),
+            $update_data,
             array('id' => $submission_id),
-            array('%d'),
+            array_map(function($k){ return $k === 'approved' ? '%d' : '%s'; }, array_keys($update_data)),
             array('%d')
         );
 
@@ -231,7 +356,10 @@ class Show_Submissions_Admin {
             $event_id = wp_insert_post($event_data);
 
             if (is_wp_error($event_id)) {
-                wp_send_json_error('Failed to create event: ' . $event_id->get_error_message());
+                $err_msg = (is_object($event_id) && method_exists($event_id, 'get_error_message'))
+                    ? $event_id->get_error_message()
+                    : 'Unknown error';
+                wp_send_json_error('Failed to create event: ' . $err_msg);
             }
 
             // If there are images, attach them to the event
@@ -273,6 +401,13 @@ class Show_Submissions_Admin {
 
         $venue_id = wp_insert_post($venue_data);
         return is_wp_error($venue_id) ? 0 : $venue_id;
+    }
+
+    private function get_or_use_venue_id($submission) {
+        if (isset($submission->venue_name) && is_numeric($submission->venue_name)) {
+            return (int)$submission->venue_name;
+        }
+        return $this->get_or_create_venue($submission);
     }
 
     private function attach_image_to_event($event_id, $image_path) {

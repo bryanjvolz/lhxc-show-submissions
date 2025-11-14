@@ -1,4 +1,8 @@
 <?php
+// Load stubs for non-WP tooling if core hooks are unavailable
+if (!function_exists('add_action')) {
+    require_once __DIR__ . '/wp-stubs.php';
+}
 class Show_Submissions_Block {
     public function __construct() {
         add_action('init', array($this, 'register_block'));
@@ -146,6 +150,8 @@ class Show_Submissions_Block {
 
         // Add images to submission data
         $submission_data['images'] = serialize($uploaded_files);
+        // Set initial status
+        $submission_data['status'] = 'New';
 
         // Store in database
         global $wpdb;
@@ -167,7 +173,8 @@ class Show_Submissions_Block {
                 '%s', // performers
                 '%f', // price
                 '%s', // show_link
-                '%s'  // ticket_link
+                '%s', // ticket_link
+                '%s'  // status
             )
         );
 
@@ -260,7 +267,10 @@ class Show_Submissions_Block {
 
         if (is_wp_error($attachment_id)) {
             @unlink($temp_file);
-            wp_send_json_error($attachment_id->get_error_message());
+            $message = (is_object($attachment_id) && method_exists($attachment_id, 'get_error_message'))
+                ? $attachment_id->get_error_message()
+                : 'Failed to sideload media';
+            wp_send_json_error($message);
         }
 
         // Store file hash as attachment metadata
