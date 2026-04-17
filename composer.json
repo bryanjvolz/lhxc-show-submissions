@@ -1,0 +1,21 @@
+{
+    "name": "show-submissions/show-submissions",
+    "description": "A submission system for show bookings with flyer upload and administration.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Bryan Volz",
+            "email": "support@bryanvolz.com"
+        }
+    ],
+    "require-dev": {
+        "wp-coding-standards/wpcs": "^3.0",
+        "php-stubs/wordpress-stubs": "^6.9"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

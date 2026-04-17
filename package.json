@@ -9,7 +9,9 @@
     "watch": "vite build --watch",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "test:e2e": "cypress run"
+    "test:e2e": "cypress run",
+    "lint:php": "vendor/bin/phpcs --standard=phpcs.xml.dist",
+    "lint:php:fix": "vendor/bin/phpcbf --standard=phpcs.xml.dist"
   },
   "devDependencies": {
     "cypress": "^14.4.0",

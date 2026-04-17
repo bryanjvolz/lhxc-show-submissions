@@ -1,0 +1,7 @@
+{
+    "intelephense.stubs": [
+        "Core",
+        "wordpress",
+        "php-stubs/wordpress-stubs"
+    ]
+}

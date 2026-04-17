@@ -1,11 +1,11 @@
 <?php
 class Show_Submissions_Activator {
-    public static function activate() {
-        global $wpdb;
-        $charset_collate = $wpdb->get_charset_collate();
-        $table_name = $wpdb->prefix . 'lhxc_show_submissions';
+	public static function activate() {
+		global $wpdb;
+		$charset_collate = $wpdb->get_charset_collate();
+		$table_name      = $wpdb->prefix . 'lhxc_show_submissions';
 
-        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             submitter_name varchar(100) NOT NULL,
             submitter_email varchar(100) NOT NULL,
@@ -28,12 +28,12 @@ class Show_Submissions_Activator {
             PRIMARY KEY  (id)
         ) $charset_collate";
 
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
 
-        // Create holding directory
-        if (!file_exists(SHOW_SUBMISSIONS_HOLDING_DIR)) {
-            wp_mkdir_p(SHOW_SUBMISSIONS_HOLDING_DIR);
-        }
-    }
+		// Create holding directory
+		if ( ! file_exists( SHOW_SUBMISSIONS_HOLDING_DIR ) ) {
+			wp_mkdir_p( SHOW_SUBMISSIONS_HOLDING_DIR );
+		}
+	}
 }

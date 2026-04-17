@@ -1,6 +1,6 @@
 # LHXC Show Submissions
 
-This Wordpress plugin allows users to submit their shows & flyers on the Louisville Hardcore Show Submissions page.
+This Wordpress plugin allows users to submit their shows & flyers on the Louisville Hardcore Show Submissions page for use with The Events Calendar plugin.
 
 ## Features
 
@@ -18,3 +18,7 @@ Run `npm run build` to build the plugin.
 ## To Test
 Run `npm run cypress:open` to open the Cypress test runner.
 Run `npm run test:e2e` to run headless Cypress tests.
+
+## To Lint
+Run `npm run lint:php` to check for PHP coding standards violations.
+Run `npm run lint:php:fix` to automatically fix PHP coding standards violations.

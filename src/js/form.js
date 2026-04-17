@@ -435,6 +435,8 @@ document.addEventListener("DOMContentLoaded", function () {
         newOrganizerInput.required = true;
         bookingNameSelect.required = false;
         if (bookingEmailInput) bookingEmailInput.value = "";
+        document.getElementById("booking_email_group").style.display = "block";
+        bookingEmailInput.required = true;
         return;
       }
 
@@ -447,6 +449,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (bookingEmailInput) {
         const email = selectedOption.getAttribute("data-email");
         bookingEmailInput.value = email || "";
+        document.getElementById("booking_email_group").style.display = "none";
+        bookingEmailInput.required = false;
       }
     });
   }
