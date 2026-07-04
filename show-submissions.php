@@ -29,6 +29,7 @@ require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-activator.
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-deactivator.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-block.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-admin.php';
+require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-import-admin.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-settings.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-show-submissions-constants.php';
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-db.php';
@@ -52,6 +53,7 @@ function initialize_show_submissions() {
 
 	new Show_Submissions_Block();
 	new Show_Submissions_Admin();
+	new Show_Submissions_Import_Admin();
 }
 
 // Add this after the existing define statements

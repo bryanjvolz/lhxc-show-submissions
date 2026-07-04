@@ -1,6 +1,6 @@
 <?php if ( ! defined( 'ABSPATH' ) ) {
 	exit;}
-wp_enqueue_style( 'admin_style', show_submissions_get_asset_url( 'css/admin_style.min.css' ), array(), '1.0.0' );
+wp_enqueue_style( 'admin', show_submissions_get_asset_url( 'css/admin_style.min.css' ), array(), '1.0.0' );
 ?>
 
 <div class="wrap">
@@ -55,11 +55,7 @@ wp_enqueue_style( 'admin_style', show_submissions_get_asset_url( 'css/admin_styl
 			</tr>
 			<tr>
 				<th><label for="venue_address">Venue Address</label></th>
-				<td><textarea id="venue_address" name="venue_address" rows="3" class="regular-text">
-				<?php
-					echo esc_textarea( $submission->venue_address );
-				?>
-				</textarea></td>
+				<td><textarea id="venue_address" name="venue_address" rows="3" class="regular-text"><?php echo esc_textarea( $submission->venue_address ); ?></textarea></td>
 			</tr>
 			<tr>
 				<th><label for="show_date">Show Date</label></th>
@@ -100,11 +96,7 @@ wp_enqueue_style( 'admin_style', show_submissions_get_asset_url( 'css/admin_styl
 			</tr> -->
 			<tr>
 				<th><label for="performers">Performers</label></th>
-				<td><textarea id="performers" name="performers" rows="3" clas="regular-text">
-				<?php
-					echo esc_textarea( $submission->performers );
-				?>
-				</textarea></td>
+				<td><textarea id="performers" name="performers" rows="3" clas="regular-text"><?php echo esc_textarea( $submission->performers ); ?></textarea></td>
 			</tr>
 			<!-- <tr>
 				<th><label for="door_price">Door Price</label></th>
@@ -154,7 +146,7 @@ wp_enqueue_style( 'admin_style', show_submissions_get_asset_url( 'css/admin_styl
 				<th><label for="approved">Approval Status</label></th>
 				<td>
 					<label class="switch">
-						<input type="checkbox" id="approved" name="approved" <?php checked( $submission->approved, 1 ); ?>>
+						<input type="checkbox" id="approved" name="approved" class="approval-toggle" <?php checked( $submission->approved, 1 ); ?>>
 						<span class="slider round"></span>
 					</label>
 				</td>

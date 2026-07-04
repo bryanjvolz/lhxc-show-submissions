@@ -114,7 +114,18 @@ $events_calendar_active = class_exists( 'Tribe__Events__Main' );
 
 					<div class="form-group" id="venue_address_group">
 						<label for="venue_address_input">Venue Address *</label>
-						<input type="text" id="venue_address_input" name="venue_address" class="google-places-autocomplete" placeholder="Start typing venue address...">
+						                        <gmp-autocomplete
+                            id="venue_address_autocomplete"
+                            class="google-places-autocomplete"
+                            placeholder="Start typing venue address..."
+                        >
+                            <input
+                                type="text"
+                                id="venue_address_input"
+                                name="venue_address_input"
+                                class="form-control"
+                            />
+                        </gmp-autocomplete>
 
 						<!-- Hidden address fields -->
 						<input type="hidden" id="venue_street" name="venue_street">

@@ -1,5 +1,5 @@
 // Custom command for WordPress login
-Cypress.Commands.add('login', (username = Cypress.env('wpUsername'), password = Cypress.env('wpPassword')) => {
+Cypress.Commands.add('login', (username = cy.env('wpUsername'), password = cy.env('wpPassword')) => {
   cy.visit('/wp-login.php')
   cy.get('#user_login').type(username)
   cy.get('#user_pass').type(password)
@@ -8,5 +8,5 @@ Cypress.Commands.add('login', (username = Cypress.env('wpUsername'), password = 
 
 // Custom command for WordPress admin login
 Cypress.Commands.add('loginAsAdmin', () => {
-  cy.login(Cypress.env('adminUsername'), Cypress.env('adminPassword'))
+  cy.login(cy.env('adminUsername'), cy.env('adminPassword'))
 })

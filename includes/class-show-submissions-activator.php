@@ -28,11 +28,23 @@ class Show_Submissions_Activator {
             PRIMARY KEY  (id)
         ) $charset_collate";
 
+				$endpoints_table_name = $wpdb->prefix . 'lhxc_show_submission_endpoints';
+		$sql_endpoints = "CREATE TABLE IF NOT EXISTS $endpoints_table_name (
+			id bigint(20) NOT NULL AUTO_INCREMENT,
+			name varchar(255) NOT NULL,
+			api_url varchar(255) NOT NULL,
+			frequency int(11) NOT NULL DEFAULT 1440,
+			status varchar(20) NOT NULL DEFAULT 'Inactive',
+			created_at datetime DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id)
+		) $charset_collate";
+
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql_endpoints );
 		dbDelta( $sql );
 
 		// Create holding directory
-		if ( ! file_exists( SHOW_SUBMISSIONS_HOLDING_DIR ) ) {
+		if ( ! \file_exists( SHOW_SUBMISSIONS_HOLDING_DIR ) ) {
 			wp_mkdir_p( SHOW_SUBMISSIONS_HOLDING_DIR );
 		}
 	}

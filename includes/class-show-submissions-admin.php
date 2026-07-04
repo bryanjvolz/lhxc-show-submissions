@@ -6,10 +6,7 @@ if ( ! function_exists( 'add_action' ) ) {
 require_once SHOW_SUBMISSIONS_PATH . 'includes/class-show-submissions-constants.php';
 
 class Show_Submissions_Admin {
-	private $admin_menu;
 	public function __construct() {
-		global $menu;
-		$this->admin_menu = $menu;
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ), 10 );
 		// Decorate main menu label with a bubble showing 'New' count
 		add_action( 'admin_menu', array( $this, 'decorate_menu_with_new_count' ), 99 );
@@ -46,32 +43,26 @@ class Show_Submissions_Admin {
 	 * displaying the number of submissions marked as 'New'.
 	 */
 	public function decorate_menu_with_new_count() {
-		global $wpdb;
+		global $wpdb, $menu;
 
-		if ( ! \is_array( $this->admin_menu ) ) {
+		if ( ! \is_array( $menu ) ) {
 			return;
 		}
 
 		// Count submissions with status 'New'
-		$table = $wpdb->prefix . 'lhxc_show_submissions';
-		$count = 0;
+		$table_name = $wpdb->prefix . 'lhxc_show_submissions';
+		$count      = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$table_name}` WHERE status = %s", 'New' ) );
 
-		$db_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE status = 'New'", $table ) );
-		if ( \is_numeric( $db_count ) ) {
-			$count = (int) $db_count;
+		if ( ! \is_numeric( $count ) || $count <= 0 ) {
+			return;
 		}
 
-		if ( $count <= 0 ) {
-			return; // No bubble when there are no new submissions
-		}
-
-		$display_count = function_exists( 'number_format_i18n' ) ? number_format_i18n( $count ) : (string) $count;
+		$display_count = number_format_i18n( $count );
 
 		// Find our top-level menu item by slug and append the bubble
-		foreach ( $this->admin_menu as $index => $item ) {
+		foreach ( $menu as $index => $item ) {
 			if ( ! empty( $item[2] ) && 'show-submissions' === $item[2] ) {
-				$menu[ $index ][0] = 'Show Submissions ' .
-					'<span class="update-plugins count-' . $count . '"><span class="update-count">' . esc_html( $display_count ) . '</span></span>';
+				$menu[ $index ][0] .= ' <span class="awaiting-mod">' . $display_count . '</span>';
 				break;
 			}
 		}
@@ -91,8 +82,7 @@ class Show_Submissions_Admin {
 		$table_name = $wpdb->prefix . 'lhxc_show_submissions';
 		$submission = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT * FROM %i WHERE id = %d',
-				$table_name,
+				"SELECT * FROM `{$table_name}` WHERE id = %d",
 				\intval( $_GET['id'] )
 			)
 		);
@@ -111,8 +101,7 @@ class Show_Submissions_Admin {
 		$table_name = $wpdb->prefix . 'lhxc_show_submissions';
 		$existing   = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT * FROM %i WHERE id = %d',
-				$table_name,
+				"SELECT * FROM `{$table_name}` WHERE id = %d",
 				\intval( $_POST['submission_id'] )
 			)
 		);
@@ -140,7 +129,7 @@ class Show_Submissions_Admin {
 				'door_time'        => sanitize_text_field( $_POST['door_time'] ?? '' ),
 				'time_zone'        => sanitize_text_field( $_POST['time_zone'] ?? '' ),
 				'music_start_time' => sanitize_text_field( $_POST['music_start_time'] ?? '' ),
-				'performers'       => \trim( sanitize_textarea_field( $_POST['performers'] ?? '' ) ),
+				'performers'       => \trim( \preg_replace( '/[ \t]{2,}/', ' ', sanitize_textarea_field( $_POST['performers'] ?? '' ) ) ),
 				'door_price'       => isset( $_POST['door_price'] ) ? \floatval( $_POST['door_price'] ) : 0,
 				'ticket_price'     => isset( $_POST['ticket_price'] ) ? \floatval( $_POST['ticket_price'] ) : 0,
 				'show_link'        => esc_url_raw( $_POST['show_link'] ?? '' ),
@@ -216,8 +205,7 @@ class Show_Submissions_Admin {
 		if ( $existing && 0 === \intval( $existing->approved ) && 1 === $now_approved ) {
 			$submission = $wpdb->get_row(
 				$wpdb->prepare(
-					'SELECT * FROM %i WHERE id = %d',
-					$table_name,
+					"SELECT * FROM `{$table_name}` WHERE id = %d",
 					\intval( $_POST['submission_id'] )
 				)
 			);
@@ -274,7 +262,7 @@ class Show_Submissions_Admin {
 			return;
 		}
 
-		wp_enqueue_style( 'show-submissions-admin', show_submissions_get_asset_url( 'css/admin.min.css' ), array(), '1.0.0' );
+		wp_enqueue_style( 'show-submissions-admin', show_submissions_get_asset_url( 'css/admin_style.min.css' ), array(), '1.0.0' );
 		wp_enqueue_script( 'show-submissions-admin', show_submissions_get_asset_url( 'js/admin.min.js' ), array( 'jquery' ), '1.0.0', true );
 
 		// Add localization data
@@ -291,7 +279,7 @@ class Show_Submissions_Admin {
 	public function render_admin_page() {
 		global $wpdb;
 		$table_name  = $wpdb->prefix . 'lhxc_show_submissions';
-		$submissions = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i ORDER BY created_at DESC', $table_name ) );
+		$submissions = $wpdb->get_results( "SELECT * FROM `{$table_name}` ORDER BY created_at DESC" );
 
 		?>
 		<div class="wrap">
@@ -340,7 +328,7 @@ class Show_Submissions_Admin {
 							<td><?php echo esc_html( isset( $submission->status ) ? $submission->status : '' ); ?></td>
 							<td>
 									<a href="<?php echo esc_url( $view_details_url ); ?>" class="button">View Details</a>
-									<a href="#" class="button button-delete delete-submission" data-id="<?php echo esc_attr( $submission->id ); ?>">Delete</a>
+									<button class="button button-delete delete-submission">Delete</button>
 							</td>
 						</tr>
 					<?php endforeach; ?>
@@ -367,8 +355,7 @@ class Show_Submissions_Admin {
 		// Get the submission data first
 		$submission = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT * FROM %i WHERE id = %d',
-				$table_name,
+				"SELECT * FROM `{$table_name}` WHERE id = %d",
 				$submission_id
 			)
 		);
@@ -450,7 +437,7 @@ class Show_Submissions_Admin {
 	public function delete_submission() {
 		check_ajax_referer( 'show_submissions_admin', 'nonce' );
 
-		$submission_id = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
+		$submission_id = isset( $_POST['id'] ) ? \intval( $_POST['id'] ) : 0;
 
 		if ( ! $submission_id ) {
 			wp_send_json_error( 'Invalid submission ID' );
@@ -462,18 +449,17 @@ class Show_Submissions_Admin {
 		// Get the submission to find the image.
 		$submission = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT images FROM %i WHERE id = %d',
-				$table_name,
+				"SELECT images FROM `{$table_name}` WHERE id = %d",
 				$submission_id
 			)
 		);
 
 		if ( $submission && ! empty( $submission->images ) ) {
 			$images = \json_decode( $submission->images );
-			if ( is_array( $images ) ) {
+			if ( \is_array( $images ) ) {
 				foreach ( $images as $image_filename ) {
 					$image_path = SHOW_SUBMISSIONS_HOLDING_DIR . $image_filename;
-					if ( file_exists( $image_path ) ) {
+					if ( \file_exists( $image_path ) ) {
 						wp_delete_file( $image_path );
 					}
 				}
@@ -556,7 +542,7 @@ class Show_Submissions_Admin {
 	}
 
 	private function get_venue_display_name( $venue_name ) {
-		if ( is_numeric( $venue_name ) ) {
+		if ( \is_numeric( $venue_name ) ) {
 			if ( function_exists( 'get_the_title' ) ) {
 				return get_the_title( (int) $venue_name );
 			} else {

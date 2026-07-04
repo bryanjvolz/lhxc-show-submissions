@@ -5,6 +5,7 @@ dotenv.config()
 
 export default defineConfig({
   projectId: '4jvazm',
+  allowCypressEnv: false,
   e2e: {
     baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:1004',
     supportFile: 'cypress/support/e2e.js',

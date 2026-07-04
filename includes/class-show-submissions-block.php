@@ -34,14 +34,15 @@ class Show_Submissions_Block {
 		$api_key = get_option( 'show_submissions_google_api_key' );
 
 		if ( $api_key ) {
-			wp_enqueue_script(
-				'google-places',
-				'https://maps.googleapis.com/maps/api/js?key=' . esc_attr( $api_key ) . '&libraries=places&callback=initGooglePlacesAutocomplete',
-				array(),
-				'1.0.0',
-				true
-			);
-		}
+            // Enqueue the Google Maps script without a callback
+            wp_enqueue_script(
+                'google-places',
+                'https://maps.googleapis.com/maps/api/js?key=' . esc_attr( $api_key ) . '&libraries=places&v=weekly',
+                array(),
+                '1.0.0',
+                true
+            );
+        }
 
 		wp_enqueue_script(
 			'show-submissions-form',

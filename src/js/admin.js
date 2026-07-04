@@ -11,6 +11,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'update_submission_approval',
+                nonce: showSubmissionsAdmin.nonce,
                 id: submissionId,
                 approved: approved
             },
@@ -24,13 +25,46 @@ jQuery(document).ready(function($) {
         });
     });
 
-
-
     // View Details button handler
     $('.view-details').on('click', function() {
         const id = $(this).closest('tr').data('id');
         window.location.href = `admin.php?page=show-submission-details&id=${id}`;
     });
+
+    // Handle submission deletion
+    $('.delete-submission').on('click', function (e) {
+      e.preventDefault();
+
+      if (!confirm('Are you sure you want to delete this submission?')) {
+        return;
+      }
+
+      const self = $(this);
+      const submissionId = self.closest('tr').data('id');
+
+      $.ajax({
+        url: showSubmissionsAdmin.ajaxurl,
+        type: 'POST',
+        data: {
+          action: 'delete_submission',
+          nonce: showSubmissionsAdmin.nonce,
+          id: submissionId,
+        },
+        success: function (response) {
+          if (response.success) {
+            self.closest('tr').fadeOut(300, function () {
+              $(this).remove();
+            });
+          } else {
+            alert(response.data || 'Failed to delete submission.');
+          }
+        },
+        error: function () {
+          alert('An error occurred while trying to delete the submission.');
+        },
+      });
+    });
+
 
     // Add to Media Library button handler
     $('.add-to-media-library').on('click', function() {
