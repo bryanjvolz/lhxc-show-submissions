@@ -1,0 +1,22 @@
+{
+  "name": "show-submissions",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "cypress run",
+    "lint:php": "vendor/bin/phpcs --standard=phpcs.xml.dist",
+    "lint:php:fix": "vendor/bin/phpcbf --standard=phpcs.xml.dist"
+  },
+  "devDependencies": {
+    "cypress": "^15.14.0",
+    "dotenv": "^16.5.0",
+    "sass": "^1.66.1",
+    "vite": "^6.3.5"
+  }
+}

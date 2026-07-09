@@ -1,0 +1,267 @@
+.show-submission-form-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+formgroup {
+  display: block;
+  padding: 1em;
+  background: rgba(10, 10, 25, 0.3);
+  margin-bottom: 1em;
+  rotate: -0.705deg;
+  rotate: var(--rotate-amt);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group {
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+}
+
+.drop-zone {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 10px;
+
+  &.dragover {
+    border-color: #000;
+    background: #f7f7f7;
+  }
+}
+
+.image-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+
+  .preview-item {
+    position: relative;
+
+    img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .remove-image {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 20px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.8);
+      }
+    }
+  }
+}
+
+.preview-item {
+  position: relative;
+  width: 120px;
+}
+
+.preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.button-group {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.submit-button,
+.back-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-button {
+  background-color: #0073aa;
+  color: white;
+}
+
+@media screen and (min-width: 800px) {
+  .show-submission-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 1.5em;
+  }
+
+  .show-submission-form div:last-child {
+    align-self: start;
+    position: sticky;
+    top: 0;
+  }
+
+  .form-columns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 100px;
+    grid-gap: 10px;
+  }
+
+  .form-columns-3lg {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .form-columns--price {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    /* grid-template-rows: repeat(3, 1fr); */
+
+    .show-link {
+      /* grid-column: span 2 / span 2; */
+      grid-column: span 4;
+    }
+
+    .ticket-link {
+      grid-column: span 2 / span 2;
+      grid-row-start: 3;
+    }
+  }
+}
+
+input[name="ticket_price"] {
+  max-width: 5em;
+}
+
+.shows-help-text {
+  grid-column: 1 / span all;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+/** review view **/
+
+.back-button {
+  background-color: #666;
+  color: white;
+}
+
+.review-content {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f7f7f7;
+  border-radius: 4px;
+
+  @media screen and (min-width: 42em) {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    min-width: 50%;
+  }
+}
+
+.review-item {
+  margin-bottom: 10px;
+}
+
+.review-fields {
+  @media screen and (min-width: 42em) {
+    width: fit-content;
+    min-width: 20em;
+  }
+}
+
+.review-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  align-items: flex-start;
+}
+
+.review-images img {
+  max-width: 100%;
+  width: auto;
+}
+
+.new-venue-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.venue-address-display {
+    display: none;
+    margin-left: 10px;
+    font-style: italic;
+    color: #666;
+}
+
+#venue_address_group,
+#step2 {
+  display: none;
+}
+
+// Handle JavaScript show/hide states
+#venue_address_group.show,
+#step2.show {
+  display: block;
+}
+
+.form-group {
+  .pac-container {
+    z-index: 1000;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+
+    .pac-item {
+      padding: 8px;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #f7f7f7;
+      }
+    }
+  }
+}
